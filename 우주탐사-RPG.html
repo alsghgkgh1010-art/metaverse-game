@@ -6,6 +6,7 @@
      배포할 때 이 줄을 라이브러리 소스로 통째로 바꿔 단일 파일로 만든다.
      개발 중에는 vendor/ 를 참조한다. file:// 에서 클래식 script 는 정상 동작한다. -->
 <script src="vendor/three.r147.min.js"></script>
+<script src="vendor/BufferGeometryUtils.r147.js"></script>
 <!-- ===== 끝 ===== -->
 
 <style>
@@ -633,91 +634,195 @@ function buildProps(){
   props.add(beam);
 }
 
-/* ---------- 캐릭터 ---------- */
-/* 페이즈 2에서는 관절로 이어 붙인 메시로 만든다.
-   포즈 시스템(관절 회전값)은 다음 단계의 SkinnedMesh와 그대로 호환된다. */
+/* ---------- 캐릭터 (골격 스키닝) ---------- */
+/* 뼈 19개를 코드로 만들고, 캡슐을 병합해 하나의 SkinnedMesh로 만든다.
+   변형이 필요 없는 부품(헬멧·가방·부츠 등)은 뼈에 그냥 매달아 재질을 따로 쓴다.
+   포즈 시스템은 페이즈 2와 완전히 같은 방식으로 뼈를 회전시킨다. */
 var CH = {};
 function buildCharacter(){
-  var suit = 0xeef1f6, suit2 = 0xdfe4ec, dark = 0x9aa2b0, gold = 0xc8912f, visor = 0x2b3a4a;
+  var C = { suit:0xeef1f6, suit2:0xdfe4ec, dark:0x9aa2b0, gold:0xc8912f,
+            visor:0x2b3a4a, orange:0xff7a33, panel:0x3a4250, helmet:0xf6f8fc };
 
-  var rig = new THREE.Group();                 // 이동·방향
-  var root = new THREE.Group(); rig.add(root); // 스쿼시·상하 진동
-  var hips = new THREE.Group(); hips.position.y = 0.92; root.add(hips);
+  /* --- 1) 뼈 정의 (바인드 자세, 메시 로컬 좌표. 발바닥이 원점) --- */
+  var defs = [
+    ['hips',      [0,0.92,0], [0,1.02,0], null],
+    ['spine',     [0,1.02,0], [0,1.20,0], 'hips'],
+    ['chest',     [0,1.20,0], [0,1.42,0], 'spine'],
+    ['neck',      [0,1.42,0], [0,1.50,0], 'chest'],
+    ['head',      [0,1.50,0], [0,1.78,0], 'neck']
+  ];
+  [['L',1],['R',-1]].forEach(function(sd){
+    var s = sd[0], k = sd[1];
+    defs.push(['shoulder_'+s, [0.07*k,1.38,0], [0.19*k,1.38,0], 'chest']);
+    defs.push(['upperArm_'+s, [0.19*k,1.38,0], [0.19*k,1.08,0], 'shoulder_'+s]);
+    defs.push(['lowerArm_'+s, [0.19*k,1.08,0], [0.20*k,0.80,0], 'upperArm_'+s]);
+    defs.push(['hand_'+s,     [0.20*k,0.80,0], [0.20*k,0.70,0], 'lowerArm_'+s]);
+    defs.push(['upperLeg_'+s, [0.11*k,0.92,0], [0.11*k,0.50,0], 'hips']);
+    defs.push(['lowerLeg_'+s, [0.11*k,0.50,0], [0.11*k,0.10,0], 'upperLeg_'+s]);
+    defs.push(['foot_'+s,     [0.11*k,0.10,0], [0.11*k,0.04,0.16], 'lowerLeg_'+s]);
+  });
 
-  function seg(parent, x, y, z){
-    var o = new THREE.Group(); o.position.set(x,y,z); parent.add(o); return o;
+  var meta = {}, bones = [], boneIdx = {};
+  defs.forEach(function(d, i){
+    meta[d[0]] = { head:new THREE.Vector3().fromArray(d[1]),
+                   tail:new THREE.Vector3().fromArray(d[2]),
+                   parent:d[3], children:[] };
+    boneIdx[d[0]] = i;
+  });
+  defs.forEach(function(d){ if(d[3]) meta[d[3]].children.push(d[0]); });
+
+  var byName = {};
+  defs.forEach(function(d){
+    var b = new THREE.Bone(); b.name = d[0];
+    var ph = d[3] ? meta[d[3]].head : new THREE.Vector3();
+    b.position.copy(meta[d[0]].head).sub(ph);      // ★ 부모 기준 로컬 좌표
+    byName[d[0]] = b; bones.push(b);
+  });
+  defs.forEach(function(d){ if(d[3]) byName[d[3]].add(byName[d[0]]); });
+  var skeleton = new THREE.Skeleton(bones);        // 배열 순서 = skinIndex
+
+  /* --- 2) 정점 가중치: 뼈 원점이 아니라 "뼈 선분"까지의 거리로 --- */
+  var _ab = new THREE.Vector3(), _ap = new THREE.Vector3(), _q = new THREE.Vector3();
+  function distToSeg(p, a, b){
+    _ab.copy(b).sub(a); _ap.copy(p).sub(a);
+    var t = clamp(_ap.dot(_ab)/Math.max(1e-9,_ab.lengthSq()), 0, 1);
+    _q.copy(a).addScaledVector(_ab, t);
+    return p.distanceTo(_q);
   }
-  function capsule(parent, len, rad, color, yOff){
-    var L = Math.max(0.001, len - 2*rad);
-    var m = new THREE.Mesh(new THREE.CapsuleGeometry(rad, L, 4, 10), matte(color, 14));
-    m.position.y = (yOff !== undefined) ? yOff : -len/2;
+  function skinPart(g, owners){
+    // 후보를 소속 뼈와 그 부모·자식으로 제한한다.
+    // 순수 거리 휴리스틱만 쓰면 왼손이 오른쪽 허벅지에 붙는 사고가 난다.
+    var cand = {};
+    owners.forEach(function(n){
+      cand[n] = 1;
+      if(meta[n].parent) cand[meta[n].parent] = 1;
+      meta[n].children.forEach(function(c){ cand[c] = 1; });
+    });
+    var list = Object.keys(cand);
+    var pos = g.attributes.position, n = pos.count;
+    var si = new Uint16Array(n*4), sw = new Float32Array(n*4);
+    var p = new THREE.Vector3(), ws = [];
+    for(var i=0;i<n;i++){
+      p.fromBufferAttribute(pos, i);
+      ws.length = 0;
+      for(var j=0;j<list.length;j++){
+        var nm = list[j];
+        var d = distToSeg(p, meta[nm].head, meta[nm].tail);
+        ws.push({ i:boneIdx[nm], w: 1/(Math.pow(d,3) + 1e-4) });
+      }
+      ws.sort(function(a,b){ return b.w - a.w; });
+      var top = ws.slice(0,4), sum = 0, k;
+      for(k=0;k<top.length;k++) sum += top[k].w;
+      for(k=0;k<top.length;k++) top[k].w /= sum;
+      top = top.filter(function(x){ return x.w >= 0.04; });
+      sum = 0; for(k=0;k<top.length;k++) sum += top[k].w;
+      for(k=0;k<4;k++){
+        if(k < top.length){ si[i*4+k] = top[k].i; sw[i*4+k] = top[k].w/sum; }
+        else { si[i*4+k] = top[0].i; sw[i*4+k] = 0; }
+      }
+    }
+    // skinIndex 는 반드시 정수 타입. Float32 로 넣으면 조용히 엉뚱한 뼈를 참조한다.
+    g.setAttribute('skinIndex',  new THREE.Uint16BufferAttribute(si, 4));
+    g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+  }
+
+  /* --- 3) 변형되는 부위를 캡슐로 만들어 병합 --- */
+  var geos = [];
+  function addSkinned(geo, color, owners, x, y, z){
+    geo.translate(x, y, z);
+    var n = geo.attributes.position.count;
+    var col = new Float32Array(n*3), c = new THREE.Color(color);
+    for(var i=0;i<n;i++){ col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b; }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geo.deleteAttribute('uv');    // ★ 어트리뷰트 집합이 다르면 병합이 실패한다
+    skinPart(geo, owners);
+    geos.push(geo);
+  }
+  function cap(r, total, rs){                    // total = 반구 포함 전체 길이
+    return new THREE.CapsuleGeometry(r, Math.max(0.001, total - 2*r), 4, rs||10);
+  }
+  addSkinned(cap(0.150, 0.34, 12), C.suit,  ['hips'],        0, 0.96, 0);
+  addSkinned(cap(0.185, 0.50, 14), C.suit,  ['spine','chest'], 0, 1.24, 0);
+  addSkinned(cap(0.060, 0.14, 10), C.suit2, ['neck'],        0, 1.45, 0);
+  [['L',1],['R',-1]].forEach(function(sd){
+    var s = sd[0], k = sd[1];
+    addSkinned(cap(0.066, 0.32, 10), C.suit, ['upperArm_'+s], 0.19*k, 1.23, 0);
+    addSkinned(cap(0.058, 0.30, 10), C.suit, ['lowerArm_'+s], 0.195*k, 0.94, 0);
+    addSkinned(cap(0.086, 0.46, 11), C.suit, ['upperLeg_'+s], 0.11*k, 0.71, 0);
+    addSkinned(cap(0.074, 0.44, 11), C.suit, ['lowerLeg_'+s], 0.11*k, 0.30, 0);
+  });
+
+  var merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false);
+  if(!merged) throw new Error('캐릭터 지오메트리 병합 실패');
+
+  var skinMat = new THREE.MeshPhongMaterial({
+    vertexColors:true, shininess:18, specular:0x1a1f28
+  });   // ★ r147 에는 material.skinning 이 없다. isSkinnedMesh 로 자동 판정된다.
+
+  var mesh = new THREE.SkinnedMesh(merged, skinMat);
+  mesh.castShadow = quality.shadow;
+  mesh.frustumCulled = false;          // 스키닝 변형이 바운딩을 벗어나 사라지는 것 방지
+  mesh.add(byName['hips']);            // ★ 루트 뼈를 먼저 붙이고
+  mesh.bind(skeleton);                 // ★ 그 다음에 바인드 (순서가 바뀌면 조용히 깨진다)
+
+  /* --- 4) 변형이 필요 없는 부품은 뼈에 그냥 매단다 (재질을 따로 쓸 수 있다) --- */
+  function attach(bone, geo, mat, x, y, z){
+    var m = new THREE.Mesh(geo, mat);
+    var h = meta[bone.name].head;
+    m.position.set(x - h.x, y - h.y, z - h.z);   // 뼈 기준 로컬로 변환
     m.castShadow = quality.shadow;
-    parent.add(m); return m;
+    bone.add(m); return m;
   }
-  function ball(parent, rad, color, y, z){
-    var m = new THREE.Mesh(new THREE.SphereGeometry(rad, 12, 10), matte(color, 20));
-    m.position.set(0, y||0, z||0); m.castShadow = quality.shadow;
-    parent.add(m); return m;
-  }
+  var mHelm = matte(C.helmet, 24), mDark = matte(C.dark, 10),
+      mGold = matte(C.gold, 30), mPanel = matte(C.panel, 25),
+      mOrange = matte(C.orange, 20), mShoulder = matte(C.suit2, 14);
+  var mVisor = new THREE.MeshPhongMaterial({ color:C.visor, shininess:110, specular:0x9ec4e4 });
 
-  capsule(hips, 0.30, 0.15, suit, 0.02);                   // 골반
-  var chest = seg(hips, 0, 0.28, 0);
-  capsule(chest, 0.44, 0.185, suit, 0.06);                 // 몸통
-  var pack = new THREE.Mesh(new THREE.BoxGeometry(0.30,0.36,0.16), matte(dark, 8));
-  pack.position.set(0, 0.08, -0.19); pack.castShadow = quality.shadow; chest.add(pack);
-  var ctrl = new THREE.Mesh(new THREE.BoxGeometry(0.13,0.09,0.05), matte(0x3a4250, 25));
-  ctrl.position.set(0, 0.02, 0.19); chest.add(ctrl);
-
-  var neck = seg(chest, 0, 0.24, 0);
-  var head = seg(neck, 0, 0.06, 0);
-  ball(head, 0.155, 0xf6f8fc, 0.09, 0);                    // 헬멧
-  var vis = new THREE.Mesh(
+  attach(byName['head'], new THREE.SphereGeometry(0.155, 16, 12), mHelm, 0, 1.62, 0);
+  var vis = attach(byName['head'],
     new THREE.SphereGeometry(0.158, 16, 12, Math.PI/2-0.62, 1.24, 0.62, 0.72),
-    new THREE.MeshPhongMaterial({ color:visor, shininess:90, specular:0x88a8c8 }));
-  vis.position.y = 0.09; vis.rotation.x = -0.10; head.add(vis);
-  var band = new THREE.Mesh(new THREE.TorusGeometry(0.152, 0.016, 6, 20), matte(gold, 30));
-  band.position.y = 0.09; band.rotation.x = Math.PI/2; head.add(band);
+    mVisor, 0, 1.62, 0);
+  vis.rotation.x = -0.10;
+  var bnd = attach(byName['head'], new THREE.TorusGeometry(0.152, 0.016, 6, 20), mGold, 0, 1.62, 0);
+  bnd.rotation.x = Math.PI/2;
+  attach(byName['chest'], new THREE.BoxGeometry(0.30,0.36,0.16), mDark, 0, 1.28, -0.19);
+  attach(byName['chest'], new THREE.BoxGeometry(0.13,0.09,0.05), mPanel, 0, 1.22, 0.19);
+  [['L',1],['R',-1]].forEach(function(sd){
+    var s = sd[0], k = sd[1];
+    attach(byName['shoulder_'+s], new THREE.SphereGeometry(0.088,10,8), mShoulder, 0.19*k, 1.38, 0);
+    attach(byName['hand_'+s],     new THREE.SphereGeometry(0.072,10,8), mGold, 0.20*k, 0.78, 0);
+    var boot = attach(byName['foot_'+s], new THREE.BoxGeometry(0.115,0.10,0.24), mDark, 0.11*k, 0.06, 0.045);
+    var st = attach(byName['upperArm_'+s], new THREE.TorusGeometry(0.070,0.015,6,14), mOrange, 0.19*k, 1.14, 0);
+    st.rotation.x = Math.PI/2;
+  });
 
-  function arm(side){
-    var sh = seg(chest, 0.185*side, 0.16, 0);
-    ball(sh, 0.085, suit2, 0, 0);
-    capsule(sh, 0.30, 0.066, suit, -0.15);
-    var el = seg(sh, 0, -0.30, 0);
-    capsule(el, 0.28, 0.058, suit, -0.14);
-    var hd = seg(el, 0, -0.28, 0);
-    ball(hd, 0.070, gold, -0.02, 0);
-    var stripe = new THREE.Mesh(new THREE.TorusGeometry(0.070, 0.015, 6, 14), matte(0xff7a33, 20));
-    stripe.position.y = -0.24; stripe.rotation.x = Math.PI/2; sh.add(stripe);
-    return { sh:sh, el:el, hd:hd };
-  }
-  function leg(side){
-    var hp = seg(hips, 0.11*side, -0.02, 0);
-    capsule(hp, 0.42, 0.086, suit, -0.21);
-    var kn = seg(hp, 0, -0.42, 0);
-    capsule(kn, 0.40, 0.074, suit, -0.20);
-    var ft = seg(kn, 0, -0.40, 0);
-    var boot = new THREE.Mesh(new THREE.BoxGeometry(0.115,0.10,0.24), matte(dark, 10));
-    boot.position.set(0,-0.05,0.045); boot.castShadow = quality.shadow; ft.add(boot);
-    return { hp:hp, kn:kn, ft:ft };
-  }
-  var armL = arm(1), armR = arm(-1), legL = leg(1), legR = leg(-1);
+  /* --- 5) 계층: rig(이동·방향) → root(스쿼시·상하 진동) → mesh --- */
+  var rig = new THREE.Group();
+  var root = new THREE.Group();          // 스케일은 여기에. 메시에 걸면 스키닝이 어긋난다.
+  rig.add(root); root.add(mesh);
+  scene.add(rig);
 
   // 발밑 블롭 그림자
   var blobTex = (function(){
-    var c = document.createElement('canvas'); c.width = c.height = 64;
-    var x = c.getContext('2d');
+    var cv2 = document.createElement('canvas'); cv2.width = cv2.height = 64;
+    var x = cv2.getContext('2d');
     var g2 = x.createRadialGradient(32,32,2,32,32,31);
     g2.addColorStop(0,'rgba(0,0,0,.55)'); g2.addColorStop(1,'rgba(0,0,0,0)');
     x.fillStyle = g2; x.fillRect(0,0,64,64);
-    return new THREE.CanvasTexture(c);
+    return new THREE.CanvasTexture(cv2);
   })();
   var blob = new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.5),
     new THREE.MeshBasicMaterial({ map:blobTex, transparent:true, depthWrite:false, fog:false }));
   blob.rotation.x = -Math.PI/2; scene.add(blob);
 
-  scene.add(rig);
-  CH = { rig:rig, root:root, hips:hips, chest:chest, neck:neck, head:head,
-         armL:armL, armR:armR, legL:legL, legR:legR, blob:blob };
+  CH = {
+    rig:rig, root:root, mesh:mesh, bones:byName, blob:blob,
+    hips: byName['hips'], chest: byName['chest'], neck: byName['neck'], head: byName['head'],
+    armL:{ sh:byName['shoulder_L'], up:byName['upperArm_L'], el:byName['lowerArm_L'], hd:byName['hand_L'] },
+    armR:{ sh:byName['shoulder_R'], up:byName['upperArm_R'], el:byName['lowerArm_R'], hd:byName['hand_R'] },
+    legL:{ hp:byName['upperLeg_L'], kn:byName['lowerLeg_L'], ft:byName['foot_L'] },
+    legR:{ hp:byName['upperLeg_R'], kn:byName['lowerLeg_R'], ft:byName['foot_R'] }
+  };
 }
 
 /* ---------- 포즈 (절차적) ---------- */
@@ -797,8 +902,8 @@ function applyPose(dt, vh, runBlend, grounded, vy, squash){
   CH.head.rotation.set(headX*D, 0, 0);
   CH.legL.hp.rotation.x = lHip*D;  CH.legL.kn.rotation.x = lKnee*D;  CH.legL.ft.rotation.x = lFoot*D;
   CH.legR.hp.rotation.x = rHip*D;  CH.legR.kn.rotation.x = rKnee*D;  CH.legR.ft.rotation.x = rFoot*D;
-  CH.armL.sh.rotation.set(lSh*D, 0, lShZ*D); CH.armL.el.rotation.x = lEl*D;
-  CH.armR.sh.rotation.set(rSh*D, 0, rShZ*D); CH.armR.el.rotation.x = rEl*D;
+  CH.armL.sh.rotation.set(0, 0, lShZ*D); CH.armL.up.rotation.x = lSh*D; CH.armL.el.rotation.x = lEl*D;
+  CH.armR.sh.rotation.set(0, 0, rShZ*D); CH.armR.up.rotation.x = rSh*D; CH.armR.el.rotation.x = rEl*D;
 }
 
 /* ---------- 플레이어 상태 ---------- */
