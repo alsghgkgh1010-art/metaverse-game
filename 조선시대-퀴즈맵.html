@@ -209,6 +209,12 @@ canvas{
   border:3px solid var(--ink); border-radius:var(--radius);
   box-shadow:var(--shadow); background:#c9bda0; touch-action:none;
 }
+.goals{ display:flex; gap:var(--s3); flex-wrap:wrap; justify-content:center;
+  margin:0 0 var(--s3); }
+.goal{ display:inline-flex; align-items:center; gap:6px; padding:5px 14px;
+  border:2px solid var(--ink); border-radius:999px; background:var(--paper-2);
+  font-weight:800; font-size:16px; }
+.goal b{ color:var(--dan-red); }
 .stage-tip{ margin:var(--s3) 0 0; text-align:center; font-weight:700;
   color:var(--ink-soft); min-height:1.6em; }
 
@@ -278,6 +284,10 @@ canvas{
   background:var(--paper-2); }
 .sheet-actions .grow{ flex:1 1 auto; }
 
+.relic-art{ display:grid; place-items:center; padding:var(--s4);
+  background:radial-gradient(circle at 50% 45%, rgba(120,200,255,.22), rgba(20,16,28,.08) 70%);
+  border:2px dashed var(--dan-blue); border-radius:16px; }
+#relicArt{ width:220px; height:160px; }
 .hintbox{ margin-top:var(--s4); padding:var(--s4);
   border:2px dashed var(--dan-gold); border-radius:var(--radius-s);
   background:#fdf6e3; font-weight:700; display:none; }
@@ -322,6 +332,14 @@ canvas{
 .rev-item.no{ border-left-color:var(--no); }
 .rev-item .qq{ font-weight:800; }
 .rev-item .aa{ font-size:16px; color:var(--ink-soft); margin-top:4px; }
+.dogam{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:var(--s3); }
+.dog{ border:2px solid var(--line); border-radius:14px; padding:var(--s3);
+  background:#fff; text-align:center; }
+.dog.got{ border-color:var(--dan-blue); background:#eef6fb; }
+.dog .ic{ font-size:34px; line-height:1; }
+.dog .nm{ font-weight:800; margin-top:4px; }
+.dog .ds{ font-size:14px; color:var(--ink-soft); margin-top:4px; line-height:1.5; }
+.dog.miss .nm{ color:var(--ink-soft); }
 .code-box{ margin:var(--s5); padding:var(--s4); border:3px dashed var(--ink);
   border-radius:var(--radius-s); text-align:center; background:#fff; }
 .code-box .code{ font-size:40px; font-weight:800; letter-spacing:.16em; }
@@ -410,6 +428,7 @@ canvas{
   <div class="hud">
     <div class="hud-map">제<b id="hudMapNo">1</b>마당 · <span id="hudMapName">경복궁</span></div>
     <span class="chip" id="chipProg">📜 0 / 20</span>
+    <span class="chip" id="chipCoin">🪙 0</span>
     <span class="chip" id="chipScore">⭐ 0점</span>
     <span class="chip" id="chipTime">⏱ 0:00</span>
     <span class="hud-spacer"></span>
@@ -420,6 +439,11 @@ canvas{
   </div>
   <div class="stage">
     <div class="stage-inner">
+      <div class="goals">
+        <span class="goal">📜 족자 <b id="goalQ">0 / 0</b></span>
+        <span class="goal">🪙 엽전 <b id="goalC">0 / 0</b></span>
+        <span class="goal">💎 숨은 유물 <b id="goalR">아직</b></span>
+      </div>
       <canvas id="cv" aria-label="조선 시대 마당 지도"></canvas>
       <p class="stage-tip" id="tip">두루마리를 찾아 문제를 풀어 보세요.</p>
     </div>
@@ -445,11 +469,16 @@ canvas{
       <div class="stat"><b id="resRight">0</b><span>맞힌 문제</span></div>
       <div class="stat"><b id="resWrong">0</b><span>틀린 문제</span></div>
       <div class="stat"><b id="resScore">0</b><span>점수</span></div>
+      <div class="stat"><b id="resCoin">0</b><span>모은 엽전</span></div>
       <div class="stat"><b id="resTime">0:00</b><span>걸린 시간</span></div>
     </div>
     <div class="code-box">
       <p style="margin:0 0 var(--s2); font-weight:800">선생님께 알려 드릴 확인 번호</p>
       <div class="code" id="resCode">------</div>
+    </div>
+    <div class="review">
+      <h3>유물 도감</h3>
+      <div class="dogam" id="resDogam"></div>
     </div>
     <div class="review" id="resReview"></div>
     <div class="sheet-actions no-print">
@@ -564,6 +593,32 @@ canvas{
   </div>
 </div>
 
+<!-- 유물 발견 -->
+<div class="overlay" id="relicOv">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-head"><span class="badge type">유물 발견</span>
+      <strong style="font-size:var(--fs-lead)" id="relicName"></strong></div>
+    <div class="sheet-body">
+      <div class="relic-art"><canvas id="relicArt" width="220" height="160"></canvas></div>
+      <p id="relicDesc" style="font-size:var(--fs-lead); font-weight:700; margin:var(--s4) 0 0"></p>
+      <p style="margin:var(--s3) 0 0; font-weight:800; color:var(--dan-red)">+150점 · 도감에 담았어요</p>
+    </div>
+    <div class="sheet-actions"><button class="btn btn-primary btn-lg grow" id="btnCloseRelic">좋아요!</button></div>
+  </div>
+</div>
+
+<!-- 이야기 -->
+<div class="overlay" id="talkOv">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-head"><span class="badge type">이야기</span>
+      <strong style="font-size:var(--fs-lead)" id="talkWho"></strong></div>
+    <div class="sheet-body">
+      <p id="talkLine" style="font-size:var(--fs-q); font-weight:800; line-height:1.55; margin:0"></p>
+    </div>
+    <div class="sheet-actions"><button class="btn btn-primary btn-lg grow" id="btnTalkNext">다음</button></div>
+  </div>
+</div>
+
 <!-- 마당 고르기 -->
 <div class="overlay" id="jump">
   <div class="sheet" role="dialog" aria-modal="true">
@@ -590,21 +645,55 @@ var 설정 = {
 };
 
 var 마당 = [
-  { 이름:'경복궁',          부제:'조선의 시작',
+  { 이름:'경복궁', 부제:'조선의 시작',
     floor:0xc7b085, floorStyle:'stone', wall:0xa79e8d, roof:0x3d4a57, roofStyle:'tile',
-    leaf:0x3f6b4e, leaf2:0x5d8a63, dark:0.14, mote:'rgba(255,246,220,1)' },
-  { 이름:'집현전',          부제:'세종의 글자와 과학',
+    leaf:0x3f6b4e, leaf2:0x5d8a63, dark:0.14, mote:'rgba(255,246,220,1)',
+    유물:{ 이름:'경국대전', 아이콘:'책',
+           설명:'조선의 법을 하나로 모은 책이에요. 관리를 뽑는 일부터 백성의 생활까지 정해 두었어요.' },
+    npc:{ 이름:'문지기', 색:'#3a4a6b', 말:[
+      '여기는 임금님이 계시는 경복궁이에요.',
+      '마당 어딘가에 나라의 법을 적은 귀한 책이 숨겨져 있어요.',
+      '담장 안쪽 작은 방도 살펴보세요!' ] } },
+
+  { 이름:'집현전', 부제:'세종의 글자와 과학',
     floor:0xa2764a, floorStyle:'wood', wall:0xc4b494, roof:0x3a322a, roofStyle:'tile',
-    leaf:0x3f6b4e, leaf2:0x5d8a63, dark:0.38, mote:'rgba(255,230,180,1)' },
-  { 이름:'한양 사람들',     부제:'유교와 신분',
+    leaf:0x3f6b4e, leaf2:0x5d8a63, dark:0.38, mote:'rgba(255,230,180,1)',
+    유물:{ 이름:'앙부일구', 아이콘:'해시계',
+           설명:'해 그림자로 시각을 알려 주는 해시계예요. 솥처럼 오목하게 생겼어요.' },
+    npc:{ 이름:'집현전 학자', 색:'#2b6178', 말:[
+      '세종 임금께서 백성을 위해 새 글자를 만드셨어요.',
+      '우리는 그 글자를 설명하는 책을 쓰고 있답니다.',
+      '왼쪽 아래 작은 방에 귀한 물건을 두었어요. 찾아보세요.' ] } },
+
+  { 이름:'한양 사람들', 부제:'유교와 신분',
     floor:0xb7a17c, floorStyle:'dirt', wall:0x94825f, roof:0x8a6a3c, roofStyle:'thatch',
-    leaf:0x4a7150, leaf2:0x6d9a69, dark:0.08, mote:'rgba(255,246,220,1)' },
+    leaf:0x4a7150, leaf2:0x6d9a69, dark:0.10, mote:'rgba(255,246,220,1)',
+    유물:{ 이름:'삼강행실도', 아이콘:'책',
+           설명:'본받을 만한 사람들의 이야기를 그림과 함께 실은 책이에요. 글을 모르는 사람도 볼 수 있었어요.' },
+    npc:{ 이름:'보부상', 색:'#8a5a2c', 말:[
+      '나는 이 장 저 장 돌아다니며 물건을 파는 보부상이라오.',
+      '한양에는 여러 신분의 사람들이 함께 살지요.',
+      '담장으로 둘러싸인 곳간에 귀한 책이 있다던데…' ] } },
+
   { 이름:'저잣거리와 마당', 부제:'조선 후기 백성의 문화',
     floor:0x7f9a5c, floorStyle:'grass', wall:0x8a7550, roof:0xa8843c, roofStyle:'thatch',
-    leaf:0x3d6b47, leaf2:0x63925e, dark:0.12, mote:'rgba(255,226,236,1)' },
-  { 이름:'남한산성',        부제:'전쟁을 이겨낸 사람들',
+    leaf:0x3d6b47, leaf2:0x63925e, dark:0.14, mote:'rgba(255,226,236,1)',
+    유물:{ 이름:'김홍도의 씨름', 아이콘:'그림',
+           설명:'백성들이 씨름을 구경하는 모습을 그린 풍속화예요. 그때 사람들의 생활이 그대로 담겨 있어요.' },
+    npc:{ 이름:'소리꾼', 색:'#b5372e', 말:[
+      '얼~쑤! 오늘은 춘향가를 한 자락 뽑아 볼까요.',
+      '요즘은 백성들도 한글 소설을 읽고 탈춤을 즐긴다오.',
+      '왼쪽 곳간에 이름난 그림 한 점이 걸려 있소.' ] } },
+
+  { 이름:'남한산성', 부제:'전쟁을 이겨낸 사람들',
     floor:0x736d64, floorStyle:'stone', wall:0x565049, roof:0x393632, roofStyle:'stone',
-    leaf:0x3b5641, leaf2:0x527049, dark:0.44, mote:'rgba(196,214,255,1)' }
+    leaf:0x3b5641, leaf2:0x527049, dark:0.44, mote:'rgba(196,214,255,1)',
+    유물:{ 이름:'난중일기', 아이콘:'책',
+           설명:'이순신 장군이 전쟁 중에 쓴 일기예요. 그날그날의 싸움과 마음이 적혀 있어요.' },
+    npc:{ 이름:'의병', 색:'#4a6b3f', 말:[
+      '나라가 위험할 때 백성들이 스스로 모여 싸웠어요.',
+      '우리는 고향의 산과 길을 훤히 알지요.',
+      '오른쪽 성벽 안쪽에 장군의 일기가 보관되어 있소.' ] } }
 ];
 
 var 문제은행 = [
@@ -737,81 +826,120 @@ var 문제은행 = [
 /* 마당 지도
    # 담/벽   . 바닥   Q 두루마리(문제)   P 문(포탈)   @ 시작 자리
    B 상/좌판  T 나무                                            */
+/* 마당 지도 — 가로 30칸 × 세로 20칸. 화면은 이 지도 위를 따라다닌다.
+   #  담장/성벽      .  바닥        Q  문제(족자)     P  다음 마당으로 가는 문
+   @  시작 자리      c  엽전        r  숨겨진 유물    n  이야기를 들려주는 사람
+   T  나무   J  장독   W  우물   S  서가   B  좌판   M  평상   F  깃발   L  등롱   G  풀숲   */
 var 지도 = [
-[ '####################',
-  '#GG..............GG#',
-  '#.L....Q....Q....L.#',
-  '#..................#',
-  '#...####....####...#',
-  '#...#..........#...#',
-  '#.T.#....Q.....#.T.#',
-  '#...#..........#...#',
-  '#...############...#',
-  '#..................#',
-  '#.L..............L.#',
-  '#....J.J......F....#',
-  '#.........@.....P..#',
-  '####################' ],
+/* 제1마당 · 경복궁 */
+[ '##############################',
+  '#GG......................GG..#',
+  '#.L..........Q..........L....#',
+  '#............................#',
+  '#....########....########....#',
+  '#....#......#....#......#....#',
+  '#.T..#..c...#....#...c..#..T.#',
+  '#....#......#....#......#....#',
+  '#....####..##....##..####....#',
+  '#.......................n....#',
+  '#....J.J.......Q.............#',
+  '#............................#',
+  '#.L....................L.....#',
+  '#......########........c.....#',
+  '#......#......#..............#',
+  '#......#..Q...#....r....F....#',
+  '#......###..###..............#',
+  '#GG.......@..............P.GG#',
+  '#............................#',
+  '##############################' ],
 
-[ '####################',
-  '#..................#',
-  '#.SS.SS.SS.SS.SS.S.#',
-  '#..................#',
-  '#.L..Q...Q...Q...L.#',
-  '#..................#',
-  '#####..######..#####',
-  '#..................#',
-  '#.SS...M....M...SS.#',
-  '#....Q.............#',
-  '#.L..............L.#',
-  '#.......@......P...#',
-  '#..................#',
-  '####################' ],
+/* 제2마당 · 집현전 */
+[ '##############################',
+  '#............................#',
+  '#.SS.SS.SS..SS.SS.SS..SS.SS..#',
+  '#............................#',
+  '#.L....Q......c......Q....L..#',
+  '#............................#',
+  '#####..###########..#####..###',
+  '#............................#',
+  '#.SS...M.....n.....M.......c.#',
+  '#............................#',
+  '#....Q..............Q........#',
+  '#............................#',
+  '#.L...####........####....L..#',
+  '#.....#..#........####.......#',
+  '#.....#r.#........####..c....#',
+  '#.....#..#........####.......#',
+  '#.....#..#........####.......#',
+  '#.......@..............P.....#',
+  '#............................#',
+  '##############################' ],
 
-[ '####################',
-  '#..................#',
-  '#.BB..BB..BB..BB.L.#',
-  '#..Q....Q....Q.....#',
-  '#..................#',
-  '#.L...W......T...L.#',
-  '#..................#',
-  '#....Q.....M.......#',
-  '#..................#',
-  '#.JJ...........TT..#',
-  '#.......@.....P....#',
-  '#..................#',
-  '#..................#',
-  '####################' ],
+/* 제3마당 · 한양 사람들 */
+[ '##############################',
+  '#............................#',
+  '#.BB..BB..BB...BB..BB..BB..L.#',
+  '#..Q.....Q.......Q...........#',
+  '#............................#',
+  '#.L....W........T......c...L.#',
+  '#............................#',
+  '#....Q......M......n.......c.#',
+  '#............................#',
+  '#.JJ......########.....TT....#',
+  '#.........#......#...........#',
+  '#.........#..r...#....G......#',
+  '#.........#......#...........#',
+  '#.........####..##...........#',
+  '#............................#',
+  '#.L..........c.............L.#',
+  '#............................#',
+  '#........@..........P........#',
+  '#............................#',
+  '##############################' ],
 
-[ '####################',
-  '#GG..............GG#',
-  '#.L...Q.....Q....L.#',
-  '#..................#',
-  '#.T....######....T.#',
-  '#......#....#......#',
-  '#......#..Q.#......#',
-  '#......##..##......#',
-  '#..................#',
-  '#.MM.Q.......F.MM..#',
-  '#..................#',
-  '#.L.....@.....P..L.#',
-  '#GG..............GG#',
-  '####################' ],
+/* 제4마당 · 저잣거리와 마당 */
+[ '##############################',
+  '#GG......................GG..#',
+  '#.L....Q..........Q......L...#',
+  '#............................#',
+  '#.T.....##########.......T...#',
+  '#.......#........#...........#',
+  '#.......#...Q....#......c....#',
+  '#.......##....####...........#',
+  '#............................#',
+  '#.MM....c......n.......MM....#',
+  '#............................#',
+  '#......####........####......#',
+  '#......#r.#........#..#......#',
+  '#......#..#........#..#...F..#',
+  '#............................#',
+  '#.L.........Q........c....L..#',
+  '#GG......................GG..#',
+  '#.......@...........P........#',
+  '#............................#',
+  '##############################' ],
 
-[ '####################',
-  '#..................#',
-  '#.L..Q.......Q...L.#',
-  '#..................#',
-  '#..####......####..#',
-  '#..#..........#....#',
-  '#..#...Q......#.F..#',
-  '#..#..........#....#',
-  '#..####......####..#',
-  '#..................#',
-  '#.L..Q.......Q...L.#',
-  '#..................#',
-  '#.T.......@....P.T.#',
-  '####################' ]
+/* 제5마당 · 남한산성 */
+[ '##############################',
+  '#............................#',
+  '#.L...Q............Q.....L...#',
+  '#............................#',
+  '#...######......######.......#',
+  '#...#....#......#....#...c...#',
+  '#...#..Q.#......#..n.#.......#',
+  '#...#....#......#....#.......#',
+  '#...##..##......##..##.......#',
+  '#............................#',
+  '#......c......Q....F.........#',
+  '#............................#',
+  '#.L.....######........###..L.#',
+  '#.......#....#........#r#....#',
+  '#.......#..Q.#........#.#....#',
+  '#.......#....#...............#',
+  '#.......##..##.....c.........#',
+  '#.T.....@..........P.......T.#',
+  '#............................#',
+  '##############################' ]
 ];
 
 /* ============================================================================
@@ -874,6 +1002,8 @@ var Snd = (function(){
     wrong: function(){ tone(240,0,.15,'sawtooth',.10); tone(180,.14,.22,'sawtooth',.10); },
     portal:function(){ tone(392,0,.10); tone(523,.08,.10); tone(659,.16,.10); tone(784,.24,.22); },
     step:  function(){ tone(150,0,.03,'square',.03); },
+    coin:  function(){ tone(988,0,.07); tone(1319,.06,.12); },
+    relic: function(){ [523,659,784,1047].forEach(function(f,i){ tone(f, i*0.10, .30, 'triangle', .15); }); },
     clear: function(){
       [523,659,784,1047,784,1047,1319].forEach(function(f,i){ tone(f, i*0.13, .3, 'triangle', .14); });
     }
@@ -888,6 +1018,7 @@ function newState(nick){
     map: 0,
     x: 0, y: 0, dir: 0,
     answered: [],          // 문항별 {done, right, usedHint, tries, given}
+    엽전: 0, 모은유물: {}, 먹은엽전: {},
     score: 0,
     startAt: Date.now(),
     elapsed: 0,
@@ -914,29 +1045,46 @@ function totalDone(){
 
 /* ---------- 지도 읽기 ---------- */
 var grid = [], qTiles = [], portal = null, spawn = {x:0,y:0};
+var coins = [], relic = null, npc = null;          // 엽전 · 숨겨진 유물 · 이야기 상대
+var MAPC = 30, MAPR = 20;                          // 지도 칸 수 (지도 배열에서 다시 읽는다)
+var MW = 0, MH = 0;                                // 지도 전체 크기(픽셀)
+var cam = { x:0, y:0 };
+
 function loadMap(m){
   S.map = m;
-  grid = []; qTiles = []; portal = null;
-  var rows = 지도[m], qIdx = qOfMap(m), qn = 0;
-  for(var r=0;r<ROWS;r++){
+  var rows = 지도[m];
+  MAPR = rows.length; MAPC = rows[0].length;
+  MW = MAPC*T; MH = MAPR*T;
+  grid = []; qTiles = []; portal = null; coins = []; relic = null; npc = null;
+  var qIdx = qOfMap(m), qn = 0;
+  var got = (S.모은유물 && S.모은유물[m]) ? true : false;
+  for(var r=0;r<MAPR;r++){
     var line = rows[r] || '';
     var row = [];
-    for(var c=0;c<COLS;c++){
+    for(var c=0;c<MAPC;c++){
       var ch = line.charAt(c) || '#';
-      if(ch === 'Q'){
-        qTiles.push({ c:c, r:r, q: qIdx[qn], armed:true });
-        qn++; ch = '.';
-      } else if(ch === 'P'){ portal = {c:c, r:r}; ch = '.'; }
+      if(ch === 'Q'){ qTiles.push({ c:c, r:r, q:qIdx[qn], armed:true }); qn++; ch = '.'; }
+      else if(ch === 'P'){ portal = {c:c, r:r}; ch = '.'; }
       else if(ch === '@'){ spawn = {x:c*T+T/2, y:r*T+T/2}; ch = '.'; }
+      else if(ch === 'c'){ coins.push({ c:c, r:r, taken:false }); ch = '.'; }
+      else if(ch === 'r'){ relic = { c:c, r:r, taken:got }; ch = '.'; }
+      else if(ch === 'n'){ npc = { c:c, r:r, armed:true }; ch = '#'; }   // 사람은 지나갈 수 없다
       row.push(ch);
     }
     grid.push(row);
   }
+  // 이 마당에서 이미 먹은 엽전은 다시 나오지 않게
+  var eaten = (S.먹은엽전 && S.먹은엽전[m]) ? S.먹은엽전[m] : {};
+  for(var i=0;i<coins.length;i++) if(eaten[coins[i].c+','+coins[i].r]) coins[i].taken = true;
+
   S.x = spawn.x; S.y = spawn.y; S.dir = 0;
+  cam.x = clamp(S.x - W/2, 0, Math.max(0, MW-W));
+  cam.y = clamp(S.y - H/2, 0, Math.max(0, MH-H));
   buildStatic(); buildMotes();
   $('hudMapNo').textContent = m+1;
   $('hudMapName').textContent = 마당[m].이름 + ' · ' + 마당[m].부제;
-  setTip('두루마리 📜 를 찾아 문제를 풀어 보세요.');
+  updateGoals();
+  setTip('족자를 찾아 문제를 풀어 보세요.');
 }
 function solid(ch){ return 'TJWSBMFL#'.indexOf(ch) >= 0; }   // G(풀)만 지나갈 수 있다
 function blocked(px, py){
@@ -944,10 +1092,27 @@ function blocked(px, py){
   var c0 = Math.floor((px-rad)/T), c1 = Math.floor((px+rad)/T);
   var r0 = Math.floor((py-rad)/T), r1 = Math.floor((py+rad)/T);
   for(var r=r0;r<=r1;r++) for(var c=c0;c<=c1;c++){
-    if(r<0||c<0||r>=ROWS||c>=COLS) return true;
+    if(r<0||c<0||r>=MAPR||c>=MAPC) return true;
     if(solid(grid[r][c])) return true;
   }
   return false;
+}
+
+/* ---------- 마당별 목표 ---------- */
+function mapGoals(m){
+  var qs = qOfMap(m), done = 0;
+  for(var i=0;i<qs.length;i++){ var a = S.answered[qs[i]]; if(a && a.done) done++; }
+  var ct = 0; for(var i=0;i<coins.length;i++) if(coins[i].taken) ct++;
+  return { q:done, qAll:qs.length, coin:ct, coinAll:coins.length,
+           relic: !!(S.모은유물 && S.모은유물[m]) };
+}
+function updateGoals(){
+  var g0 = mapGoals(S.map);
+  $('goalQ').textContent = g0.q + ' / ' + g0.qAll;
+  $('goalC').textContent = g0.coin + ' / ' + g0.coinAll;
+  $('goalR').textContent = g0.relic ? '찾음' : '아직';
+  $('goalR').style.color = g0.relic ? 'var(--ok)' : 'var(--ink-soft)';
+  $('chipCoin').textContent = '🪙 ' + (S.엽전 || 0);
 }
 
 /* ---------- 그리기 ---------- */
@@ -958,11 +1123,8 @@ var stat = document.createElement('canvas');       // 바닥·벽·소품 (맵�
 var statG = stat.getContext('2d');
 var lightL = document.createElement('canvas');     // 어둠 + 빛 웅덩이
 var lightG = lightL.getContext('2d');
-function setupCanvases(){
-  [[cv,g],[stat,statG],[lightL,lightG]].forEach(function(p){
-    p[0].width = W*SS; p[0].height = H*SS;
-    p[1].setTransform(SS,0,0,SS,0,0);
-  });
+function setupCanvases(){          // 보이는 창은 960×672 고정
+  cv.width = W*SS; cv.height = H*SS; g.setTransform(SS,0,0,SS,0,0);
 }
 
 /* 타일마다 항상 같은 값을 주는 해시 — 무늬가 매 프레임 흔들리지 않게 */
@@ -1036,7 +1198,7 @@ function drawFloor(x, y, c, r, th){
 
 /* ---- 벽: 윗면(기와/성가퀴) + 앞면 ---- */
 function isWall(c, r){
-  if(c<0||r<0||c>=COLS||r>=ROWS) return true;
+  if(c<0||r<0||c>=MAPC||r>=MAPR) return true;
   return grid[r][c] === '#';
 }
 function drawWall(x, y, c, r, th){
@@ -1214,20 +1376,21 @@ var lanterns = [];
 function buildStatic(){
   var th = 마당[S.map];
   lanterns.length = 0;
+  stat.width = MW*SS; stat.height = MH*SS;          // 정적 레이어는 지도 전체
   statG.setTransform(SS,0,0,SS,0,0);
-  statG.clearRect(0,0,W,H);
+  statG.clearRect(0,0,MW,MH);
   // 바닥 먼저 (벽 자리도 바닥을 깔아 둔다)
-  for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++) drawFloor(c*T, r*T, c, r, th);
+  for(var r=0;r<MAPR;r++) for(var c=0;c<MAPC;c++) drawFloor(c*T, r*T, c, r, th);
   // 큰 흐름의 명암 — 타일 단위 얼룩보다 훨씬 자연스럽다
-  var wash = statG.createRadialGradient(W*0.42, H*0.34, H*0.18, W*0.5, H*0.5, H*1.05);
+  var wash = statG.createRadialGradient(MW*0.42, MH*0.34, MH*0.18, MW*0.5, MH*0.5, MH*1.05);
   wash.addColorStop(0, 'rgba(255,246,220,.10)');
   wash.addColorStop(1, 'rgba(30,22,12,.20)');
-  statG.fillStyle = wash; statG.fillRect(0,0,W,H);
+  statG.fillStyle = wash; statG.fillRect(0,0,MW,MH);
   // 벽
-  for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++)
+  for(var r=0;r<MAPR;r++) for(var c=0;c<MAPC;c++)
     if(grid[r][c] === '#') drawWall(c*T, r*T, c, r, th);
   // 소품
-  for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++){
+  for(var r=0;r<MAPR;r++) for(var c=0;c<MAPC;c++){
     var ch = grid[r][c];
     if('TJWSBMFLG'.indexOf(ch) >= 0){
       drawProp(ch, c*T, r*T, c, r, th);
@@ -1238,11 +1401,12 @@ function buildStatic(){
 }
 /* ---- 어둠 + 빛 웅덩이 ---- */
 function buildLight(th){
+  lightL.width = MW*SS; lightL.height = MH*SS;
   lightG.setTransform(SS,0,0,SS,0,0);
-  lightG.clearRect(0,0,W,H);
+  lightG.clearRect(0,0,MW,MH);
   if(th.dark <= 0.001) return;
   lightG.fillStyle = 'rgba(18,14,28,'+th.dark+')';
-  lightG.fillRect(0,0,W,H);
+  lightG.fillRect(0,0,MW,MH);
   lightG.globalCompositeOperation = 'destination-out';
   for(var i=0;i<lanterns.length;i++){
     var L = lanterns[i];
@@ -1349,54 +1513,161 @@ function drawMotes(dt, th){
   g.globalAlpha = 1;
 }
 
+/* ---- 엽전 · 유물 · 이야기 상대 ---- */
+function drawCoin(x, y, t){
+  var bob = reduceMotion ? 0 : Math.sin(t/300 + x*0.05)*3;
+  var cx = x + T/2, cy = y + T/2 + bob;
+  var sp = reduceMotion ? 1 : Math.abs(Math.cos(t/380 + x*0.03));   // 도는 느낌
+  g.fillStyle = 'rgba(0,0,0,.20)';
+  g.beginPath(); g.ellipse(cx, y+T-8, 9, 3, 0, 0, 6.3); g.fill();
+  var gr = g.createRadialGradient(cx, cy, 2, cx, cy, 22);
+  gr.addColorStop(0, 'rgba(255,214,110,.40)'); gr.addColorStop(1, 'rgba(255,214,110,0)');
+  g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, 22, 0, 6.3); g.fill();
+  g.fillStyle = '#8a6a1e';
+  g.beginPath(); g.ellipse(cx, cy, 11*sp+1, 11, 0, 0, 6.3); g.fill();
+  g.fillStyle = '#e8b93c';
+  g.beginPath(); g.ellipse(cx, cy-1, 9.5*sp+1, 9.5, 0, 0, 6.3); g.fill();
+  g.fillStyle = '#8a6a1e';
+  g.fillRect(cx-3*sp, cy-4, 6*sp, 6);                              // 가운데 네모 구멍
+  g.fillStyle = 'rgba(255,255,255,.55)';
+  g.beginPath(); g.ellipse(cx-3.5*sp, cy-5, 2*sp+0.4, 2.4, -0.4, 0, 6.3); g.fill();
+}
+function drawRelic(x, y, t){
+  var bob = reduceMotion ? 0 : Math.sin(t/500)*4;
+  var cx = x + T/2, cy = y + T/2 - 2 + bob;
+  var p = reduceMotion ? 0.6 : (0.5 + 0.5*Math.sin(t/300));
+  g.fillStyle = 'rgba(0,0,0,.22)';
+  g.beginPath(); g.ellipse(cx, y+T-6, 14, 4.5, 0, 0, 6.3); g.fill();
+  var gr = g.createRadialGradient(cx, cy, 4, cx, cy, 44);
+  gr.addColorStop(0, 'rgba(150,220,255,'+(0.40+0.24*p)+')');
+  gr.addColorStop(1, 'rgba(150,220,255,0)');
+  g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, 44, 0, 6.3); g.fill();
+  // 보물함
+  g.fillStyle = '#7a5433'; g.fillRect(cx-16, cy-4, 32, 18);
+  g.fillStyle = '#5d3f26'; g.fillRect(cx-16, cy+10, 32, 4);
+  g.fillStyle = '#8a6338';
+  g.beginPath(); g.moveTo(cx-16, cy-4); g.quadraticCurveTo(cx, cy-22, cx+16, cy-4); g.fill();
+  g.fillStyle = '#c28f2c'; g.fillRect(cx-16, cy-6, 32, 4); g.fillRect(cx-3, cy-6, 6, 14);
+  g.fillStyle = '#f6dc9a'; g.fillRect(cx-2, cy+1, 4, 5);
+  g.fillStyle = 'rgba(255,255,255,'+(0.22+0.28*p)+')';
+  g.beginPath(); g.moveTo(cx-9, cy-13); g.lineTo(cx-7, cy-9); g.lineTo(cx-11, cy-9); g.fill();
+}
+function drawNPC(x, y, t){
+  var th = 마당[S.map], col = th.npc.색;
+  var bob = reduceMotion ? 0 : Math.sin(t/700)*1.5;
+  var bx = x + T/2, by = y + T - 12 + bob;
+  g.fillStyle = 'rgba(0,0,0,.26)';
+  g.beginPath(); g.ellipse(bx, y+T-6, 12, 4.5, 0, 0, 6.3); g.fill();
+  g.fillStyle = '#3a3226'; g.fillRect(bx-8, by+2, 7, 12); g.fillRect(bx+1, by+2, 7, 12);
+  g.fillStyle = col; g.fillRect(bx-11, by-11, 22, 14);
+  g.fillStyle = 'rgba(255,255,255,.20)'; g.fillRect(bx-11, by-11, 22, 3);
+  g.fillStyle = '#f0c9a0'; g.fillRect(bx-9, by-26, 18, 16);
+  g.fillStyle = '#241f1a'; g.fillRect(bx-10, by-29, 20, 8);
+  g.fillRect(bx-5, by-19, 3, 3); g.fillRect(bx+2, by-19, 3, 3);
+  g.fillStyle = 'rgba(20,16,12,.92)';                              // 갓
+  g.beginPath(); g.ellipse(bx, by-29, 18, 5, 0, 0, 6.3); g.fill();
+  g.fillStyle = '#2a241e'; g.fillRect(bx-7, by-40, 14, 11);
+  // 이름표 + 말풍선 표시
+  g.font = 'bold 13px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
+  var nm = th.npc.이름, tw = g.measureText(nm).width, pw = tw + 14;
+  g.fillStyle = 'rgba(24,20,16,.72)';
+  if(g.roundRect){ g.beginPath(); g.roundRect(bx-pw/2, by-58, pw, 18, 9); g.fill(); }
+  else g.fillRect(bx-pw/2, by-58, pw, 18);
+  g.fillStyle = '#fff'; g.fillText(nm, bx, by-49);
+  if(!reduceMotion){
+    var p = 0.5 + 0.5*Math.sin(t/380);
+    g.fillStyle = 'rgba(246,220,154,'+(0.55+0.35*p)+')';
+    if(g.roundRect){ g.beginPath(); g.roundRect(bx+11, by-46, 20, 15, 6); g.fill(); }
+    else g.fillRect(bx+11, by-46, 20, 15);
+    g.fillStyle = '#241f1a'; g.font = 'bold 12px ' + FONT;
+    g.fillText('…', bx+21, by-38);
+  }
+}
+
 /* ---- 한 프레임 ---- */
 var vignette = null;
 function buildVignette(){
-  vignette = g.createRadialGradient(W/2, H/2, H*0.42, W/2, H/2, H*0.86);
+  vignette = g.createRadialGradient(W/2, H/2, H*0.42, W/2, H/2, H*0.90);
   vignette.addColorStop(0, 'rgba(0,0,0,0)');
-  vignette.addColorStop(1, 'rgba(20,14,8,.34)');
+  vignette.addColorStop(1, 'rgba(18,12,6,.40)');
 }
 function render(t, dt){
   var th = 마당[S.map];
-  g.drawImage(stat, 0, 0, W, H);
+  // 카메라 — 아바타를 따라가되 지도 밖으로 나가지 않는다
+  var tx = clamp(S.x - W/2, 0, Math.max(0, MW-W));
+  var ty = clamp(S.y - H/2, 0, Math.max(0, MH-H));
+  var k = 1 - Math.exp(-12*Math.max(0.001, dt));
+  cam.x += (tx-cam.x)*k; cam.y += (ty-cam.y)*k;
+  var ox = Math.round(cam.x), oy = Math.round(cam.y);
 
-  // 문제·문
+  g.drawImage(stat, ox*SS, oy*SS, W*SS, H*SS, 0, 0, W, H);
+
+  g.save(); g.translate(-ox, -oy);
+  for(var i=0;i<coins.length;i++) if(!coins[i].taken) drawCoin(coins[i].c*T, coins[i].r*T, t);
+  if(relic && !relic.taken) drawRelic(relic.c*T, relic.r*T, t);
+  if(npc) drawNPC(npc.c*T, npc.r*T, t);
   for(var i=0;i<qTiles.length;i++){
     var q = qTiles[i], a = S.answered[q.q];
     drawScroll(q.c*T, q.r*T, !!(a && a.done), t);
   }
   if(portal) drawGate(portal.c*T, portal.r*T, canPass(), t);
   drawPlayer(S.x, S.y, S.dir, moving, t);
+  g.restore();
 
   // 어둠 + 빛 웅덩이
   if(th.dark > 0.001){
-    g.drawImage(lightL, 0, 0, W, H);
-    if(!reduceMotion){                                 // 등롱 불빛 (깜빡임)
+    g.drawImage(lightL, ox*SS, oy*SS, W*SS, H*SS, 0, 0, W, H);
+    if(!reduceMotion){
+      g.save(); g.translate(-ox, -oy);
       g.globalCompositeOperation = 'lighter';
       for(var i=0;i<lanterns.length;i++){
         var L = lanterns[i];
-        var fl = 0.72 + 0.28*Math.sin(t/180 + i*2.1) * Math.sin(t/77 + i);
+        if(L.x < ox-80 || L.x > ox+W+80 || L.y < oy-80 || L.y > oy+H+80) continue;
+        var fl = 0.72 + 0.28*Math.sin(t/180 + i*2.1)*Math.sin(t/77 + i);
         var gr = g.createRadialGradient(L.x, L.y+6, 2, L.x, L.y+6, 46);
         gr.addColorStop(0, 'rgba(255,196,96,'+(0.34*fl)+')');
         gr.addColorStop(1, 'rgba(255,196,96,0)');
         g.fillStyle = gr; g.beginPath(); g.arc(L.x, L.y+6, 46, 0, 6.3); g.fill();
       }
       g.globalCompositeOperation = 'source-over';
+      g.restore();
     }
   }
   drawMotes(dt, th);
   if(vignette){ g.fillStyle = vignette; g.fillRect(0,0,W,H); }
 
-  // 남은 문제 안내
+  // 화면 위 안내
   var left = 0;
   for(var i=0;i<qTiles.length;i++){ var a2 = S.answered[qTiles[i].q]; if(!(a2 && a2.done)) left++; }
-  var label = left > 0 ? ('이 마당에 남은 문제 ' + left + '개') : '문이 열렸어요! ⛩️ 로 가 보세요';
+  var label = left > 0 ? ('이 마당에 남은 문제 ' + left + '개') : '문이 열렸어요! 다음 마당으로 가 보세요';
   g.font = 'bold 17px ' + FONT; g.textAlign = 'left'; g.textBaseline = 'middle';
   var w = g.measureText(label).width;
-  g.fillStyle = left > 0 ? 'rgba(24,20,16,.74)' : 'rgba(181,55,46,.88)';
+  g.fillStyle = left > 0 ? 'rgba(24,20,16,.74)' : 'rgba(181,55,46,.90)';
   if(g.roundRect){ g.beginPath(); g.roundRect(12, 12, w+26, 32, 10); g.fill(); }
   else g.fillRect(12, 12, w+26, 32);
   g.fillStyle = '#f6f1e4'; g.fillText(label, 25, 29);
+
+  // 아직 안 푼 족자·유물이 화면 밖이면 가장자리에 화살표로 알려 준다
+  if(!busy) drawOffscreenHints(ox, oy, t);
+}
+function drawOffscreenHints(ox, oy, t){
+  var marks = [];
+  for(var i=0;i<qTiles.length;i++){
+    var a = S.answered[qTiles[i].q];
+    if(!(a && a.done)) marks.push({ x:qTiles[i].c*T+T/2, y:qTiles[i].r*T+T/2, col:'#c28f2c' });
+  }
+  if(relic && !relic.taken) marks.push({ x:relic.c*T+T/2, y:relic.r*T+T/2, col:'#6cc8f0' });
+  for(var i=0;i<marks.length;i++){
+    var sx = marks[i].x - ox, sy = marks[i].y - oy;
+    if(sx > 40 && sx < W-40 && sy > 40 && sy < H-40) continue;      // 화면 안이면 안 그린다
+    var px = clamp(sx, 34, W-34), py = clamp(sy, 34, H-34);
+    var ang = Math.atan2(sy-H/2, sx-W/2);
+    g.save(); g.translate(px, py); g.rotate(ang);
+    g.fillStyle = marks[i].col; g.globalAlpha = 0.88;
+    g.beginPath(); g.moveTo(14,0); g.lineTo(-8,-9); g.lineTo(-4,0); g.lineTo(-8,9);
+    g.closePath(); g.fill();
+    g.globalAlpha = 1; g.restore();
+  }
 }
 function canPass(){
   return 설정.진행방식 === 'free' || mapCleared(S.map);
@@ -1488,7 +1759,32 @@ requestAnimationFrame(loop);
 
 function tileOf(px,py){ return { c: Math.floor(px/T), r: Math.floor(py/T) }; }
 function checkTiles(){
-  var p = tileOf(S.x, S.y);
+  var p = tileOf(S.x, S.y), i;
+  // 엽전
+  for(i=0;i<coins.length;i++){
+    var cn = coins[i];
+    if(cn.taken) continue;
+    if(Math.hypot(S.x-(cn.c*T+T/2), S.y-(cn.r*T+T/2)) < 26){
+      cn.taken = true;
+      S.엽전 = (S.엽전||0) + 1; S.score += 20;
+      if(!S.먹은엽전[S.map]) S.먹은엽전[S.map] = {};
+      S.먹은엽전[S.map][cn.c+','+cn.r] = 1;
+      Snd.coin(); updateHud(); updateGoals(); save();
+      setTip('엽전을 주웠어요! 힌트를 살 때 씁니다.');
+    }
+  }
+  // 숨겨진 유물
+  if(relic && !relic.taken && Math.hypot(S.x-(relic.c*T+T/2), S.y-(relic.r*T+T/2)) < 30){
+    relic.taken = true; S.모은유물[S.map] = true; S.score += 150;
+    Snd.relic(); updateHud(); updateGoals(); save();
+    openRelic(S.map); return;
+  }
+  // 이야기 상대
+  if(npc){
+    var dn = Math.hypot(S.x-(npc.c*T+T/2), S.y-(npc.r*T+T/2));
+    if(dn < 46){ if(npc.armed){ npc.armed = false; openTalk(S.map); return; } }
+    else npc.armed = true;
+  }
   // 두루마리
   for(var i=0;i<qTiles.length;i++){
     var q = qTiles[i];
@@ -1576,6 +1872,7 @@ function openQuiz(idx){
   $('qHint').textContent = q.힌트 || '';
   $('qHint').classList.remove('on');
   $('btnHint').style.display = q.힌트 ? '' : 'none';
+  $('btnHint').textContent = '💡 힌트 보기 (엽전 2)';
   $('btnHint').disabled = false;
   $('qVerdict').className = 'verdict';
   $('btnCheck').style.display = ''; $('btnCheck').disabled = false;
@@ -1656,6 +1953,7 @@ function closeQuiz(){
 /* ---------- HUD / 저장 ---------- */
 function updateHud(){
   $('chipProg').textContent = '📜 ' + totalDone() + ' / ' + 문제은행.length;
+  $('chipCoin').textContent = '🪙 ' + (S.엽전 || 0);
   $('chipScore').textContent = '⭐ ' + S.score + '점';
   $('btnJump').style.display = 설정.진행방식 === 'free' ? '' : 'none';
 }
@@ -1664,6 +1962,7 @@ function save(){
   try{
     store.set('save', JSON.stringify({
       nick:S.nick, map:S.map, answered:S.answered, score:S.score,
+      엽전:S.엽전, 모은유물:S.모은유물, 먹은엽전:S.먹은엽전,
       elapsed:(Date.now()-S.startAt)/1000, cfg:설정
     }));
   }catch(e){}
@@ -1681,11 +1980,26 @@ function finish(){
   $('resWrong').textContent = wrong;
   $('resScore').textContent = S.score;
   $('resTime').textContent = fmtTime(sec);
+  $('resCoin').textContent = S.엽전 || 0;
+  var dg = $('resDogam'); dg.innerHTML = '';
+  마당.forEach(function(m, i){
+    var got = !!(S.모은유물 && S.모은유물[i]);
+    var d = document.createElement('div');
+    d.className = 'dog ' + (got ? 'got' : 'miss');
+    var ic = document.createElement('div'); ic.className = 'ic';
+    ic.textContent = got ? ({'책':'📕','해시계':'🕰️','그림':'🖼️'}[m.유물.아이콘] || '💎') : '❔';
+    var nm = document.createElement('div'); nm.className = 'nm';
+    nm.textContent = got ? m.유물.이름 : '못 찾음';
+    var ds = document.createElement('div'); ds.className = 'ds';
+    ds.textContent = got ? m.유물.설명 : (m.이름 + '에 숨어 있어요');
+    d.appendChild(ic); d.appendChild(nm); d.appendChild(ds);
+    dg.appendChild(d);
+  });
 
   var medal='🎖️', title='탐험을 마쳤어요!', sub='끝까지 걸어온 것만으로 훌륭해요';
-  if(S.score >= 1700){ medal='🥇'; title='으뜸 탐험가!'; sub='조선의 다섯 마당을 완벽하게 누볐어요'; }
-  else if(S.score >= 1300){ medal='🥈'; title='뛰어난 탐험가!'; sub='아주 잘했어요'; }
-  else if(S.score >= 900){ medal='🥉'; title='씩씩한 탐험가!'; sub='잘했어요. 틀린 문제만 다시 보면 완벽해요'; }
+  if(S.score >= 2500){ medal='🥇'; title='으뜸 탐험가!'; sub='문제도 유물도 모두 찾아냈어요'; }
+  else if(S.score >= 1900){ medal='🥈'; title='뛰어난 탐험가!'; sub='아주 잘했어요'; }
+  else if(S.score >= 1300){ medal='🥉'; title='씩씩한 탐험가!'; sub='잘했어요. 못 찾은 유물을 다시 찾아볼까요?'; }
   $('resMedal').textContent = medal;
   $('resTitle').textContent = S.nick + ' — ' + title;
   $('resSub').textContent = sub;
@@ -1746,6 +2060,7 @@ $('btnResume').onclick = function(){
     S = newState(d.nick);
     S.answered = d.answered || [];
     S.score = d.score || 0;
+    S.엽전 = d.엽전 || 0; S.모은유물 = d.모은유물 || {}; S.먹은엽전 = d.먹은엽전 || {};
     S.startAt = Date.now() - (d.elapsed||0)*1000;
     if(d.cfg){ 설정.오답허용 = d.cfg.오답허용; 설정.진행방식 = d.cfg.진행방식; syncTeacherUI(); }
     loadMap(Math.min(d.map||0, 지도.length-1));
@@ -1765,9 +2080,72 @@ $('btnRetryWrong').onclick = function(){
   setTip('틀린 문제만 다시 풀어 보세요.');
 };
 
+/* ---------- 유물 · 이야기 ---------- */
+var 유물아이콘 = {
+  '책':   function(x,c){ c.fillStyle='#8a5a2c'; c.fillRect(x-52,-38,104,76);
+            c.fillStyle='#f3e8cf'; c.fillRect(x-46,-32,92,64);
+            c.fillStyle='#c9b48a'; for(var i=0;i<5;i++) c.fillRect(x-38,-22+i*11,76,3);
+            c.fillStyle='#b5372e'; c.fillRect(x-6,-38,12,76); },
+  '해시계':function(x,c){ c.fillStyle='#6e6a62'; c.beginPath();
+            c.ellipse(x,10,54,20,0,0,6.3); c.fill();
+            c.fillStyle='#8d887e'; c.beginPath(); c.arc(x,4,46,Math.PI,0); c.fill();
+            c.fillStyle='#3b3730'; c.beginPath(); c.arc(x,4,36,Math.PI,0); c.fill();
+            c.strokeStyle='#c9a24a'; c.lineWidth=3;
+            for(var i=0;i<5;i++){ var a=Math.PI+ (i+1)*Math.PI/6;
+              c.beginPath(); c.moveTo(x,4); c.lineTo(x+Math.cos(a)*34, 4+Math.sin(a)*34); c.stroke(); }
+            c.strokeStyle='#e8d9a8'; c.lineWidth=4;
+            c.beginPath(); c.moveTo(x,4); c.lineTo(x+16,-30); c.stroke(); },
+  '그림': function(x,c){ c.fillStyle='#8a5a2c'; c.fillRect(x-58,-46,116,92);
+            c.fillStyle='#efe3c8'; c.fillRect(x-50,-38,100,76);
+            c.fillStyle='#6b4a2a'; c.beginPath(); c.arc(x-16,6,13,0,6.3); c.fill();
+            c.beginPath(); c.arc(x+16,6,13,0,6.3); c.fill();
+            c.fillStyle='#b5372e'; c.fillRect(x-22,-14,12,20); c.fillRect(x+10,-14,12,20);
+            c.fillStyle='#3f6b4e'; c.beginPath(); c.ellipse(x,26,44,10,0,0,6.3); c.fill(); }
+};
+function openRelic(m){
+  var u = 마당[m].유물;
+  $('relicName').textContent = u.이름;
+  $('relicDesc').textContent = u.설명;
+  var rc = $('relicArt'), d = Math.min(devicePixelRatio||1,2);
+  rc.width = 220*d; rc.height = 160*d;
+  var c2 = rc.getContext('2d'); c2.setTransform(d,0,0,d,0,0);
+  c2.clearRect(0,0,220,160); c2.save(); c2.translate(0,84);
+  (유물아이콘[u.아이콘] || 유물아이콘['책'])(110, c2); c2.restore();
+  busy = true; keys = {}; padVec.x = padVec.y = 0;
+  openOv('relicOv');
+}
+$('btnCloseRelic').onclick = function(){ closeOv('relicOv'); busy = false; };
+
+var talkIdx = 0, talkLines = [];
+function openTalk(m){
+  talkLines = 마당[m].npc.말; talkIdx = 0;
+  $('talkWho').textContent = 마당[m].npc.이름;
+  $('talkLine').textContent = talkLines[0];
+  $('btnTalkNext').textContent = talkLines.length > 1 ? '다음' : '알겠어요';
+  busy = true; keys = {}; padVec.x = padVec.y = 0;
+  Snd.open(); openOv('talkOv');
+}
+$('btnTalkNext').onclick = function(){
+  talkIdx++;
+  if(talkIdx >= talkLines.length){ closeOv('talkOv'); busy = false; return; }
+  $('talkLine').textContent = talkLines[talkIdx];
+  $('btnTalkNext').textContent = (talkIdx === talkLines.length-1) ? '알겠어요' : '다음';
+  Snd.open();
+};
+
 $('btnHint').onclick = function(){
   var a = S.answered[curQ] || (S.answered[curQ] = {done:false,right:false,usedHint:false,tries:0,given:''});
-  a.usedHint = true;
+  if(!a.usedHint){
+    if((S.엽전||0) < 2){
+      setShake();
+      $('qHint').textContent = '엽전이 모자라요. 마당을 돌아다니며 엽전을 주워 보세요. (2개 필요)';
+      $('qHint').classList.add('on');
+      return;
+    }
+    S.엽전 -= 2; a.usedHint = true;
+    $('qHint').textContent = 문제은행[curQ].힌트 || '';
+    updateHud(); updateGoals(); save();
+  }
   $('qHint').classList.add('on');
   this.disabled = true;
 };
@@ -1814,6 +2192,7 @@ addEventListener('keydown', function(e){
   if($('quiz').classList.contains('on')){ if($('btnCloseQuiz').style.display !== 'none') closeQuiz(); return; }
   if($('help').classList.contains('on')){ closeOv('help'); busy=false; return; }
   if($('jump').classList.contains('on')){ closeOv('jump'); busy=false; return; }
+  if($('relicOv').classList.contains('on')){ closeOv('relicOv'); busy=false; return; }
   if($('teacher').classList.contains('on')){ closeOv('teacher'); return; }
 });
 // 숫자키로 보기 고르기
