@@ -184,9 +184,11 @@ input[type=range]{ flex:1 1 160px; min-width:140px; height:44px; }
     <div><span class="k">끌어당기는 힘</span> <b id="uiGrav">기준</b></div>
     <div><span class="k">가장 높이 뛴 기록</span> <b id="uiJump">0.00 m</b></div>
     <div><span class="k">공중에 뜬 시간</span> <b id="uiAir">0.00 초</b></div>
+    <div id="uiSkyRow" hidden><span class="k">하늘에 보이는 것</span> <b id="uiSky">—</b></div>
   </div>
 </div>
 <div class="ui" id="topRight" hidden>
+  <button class="icon-btn" id="btnZoom" title="관측하기 (Z)" aria-pressed="false">🔭</button>
   <button class="icon-btn" id="btnGrav" title="다른 천체의 힘으로 바꾸기">🌗</button>
   <button class="icon-btn" id="btnSettings" title="설정">⚙️</button>
   <button class="icon-btn" id="btnHelp2" title="도움말">❓</button>
@@ -197,6 +199,10 @@ input[type=range]{ flex:1 1 160px; min-width:140px; height:44px; }
 </div>
 <div class="ui" id="fps" hidden>—</div>
 <div id="record"><span id="recMain"></span><small id="recSub"></small></div>
+<div class="ui panel" id="zoomHint" hidden
+     style="left:50%; transform:translateX(-50%); top:14px; font-weight:800">
+  🔭 관측 중 · 4배로 크게 보여요 <span style="font-weight:700;color:var(--ink-soft)">(Z 를 다시 누르면 꺼져요)</span>
+</div>
 
 <div id="stick"><div id="knob"></div></div>
 <button id="btnJumpTouch">점프</button>
@@ -287,7 +293,8 @@ var STEP_UP = 0.35;
 var BODIES = {
   earth: { name:'지구',   g:9.81, label:'기준',            sky:['#3a7bd5','#bcd8f5'], fog:0.0055, fogC:0xbcd8f5, ground:0x6f7d4a },
   moon:  { name:'달',     g:1.62, label:'지구의 약 1/6',   sky:['#000005','#05050c'], fog:0,      fogC:0x000000, ground:0x8d8b86 },
-  mars:  { name:'화성',   g:3.72, label:'지구의 약 1/3',   sky:['#7a6a5a','#d9a878'], fog:0.0022, fogC:0xc79a72, ground:0xa2603c }
+  mars:  { name:'화성',   g:3.72, label:'지구의 약 1/3',   sky:['#7a6a5a','#d9a878'], fog:0.0022, fogC:0xc79a72, ground:0xa2603c },
+  europa:{ name:'유로파', g:1.31, label:'지구의 약 1/7',   sky:['#000004','#04060c'], fog:0,      fogC:0x000000, ground:0xbdcde3 }
 };
 var bodyKey = 'earth';
 function G(){ return BODIES[bodyKey].g; }
@@ -457,6 +464,142 @@ var stars = (function(){
   scene.add(p); return p;
 })();
 
+/* ---------- 천체별 지형 특징 ---------- */
+function fbm01(x, z, oct, freq, gain, lac){
+  return clamp(fbm(x, z, oct, freq, gain, lac)*0.9 + 0.5, 0, 1);
+}
+var craters = [];
+function prepareBody(key){
+  craters.length = 0;
+  if(key === 'moon'){
+    // 크레이터 크기는 멱법칙 분포를 따른다. 큰 것부터 적용해야 겹침이 자연스럽다.
+    // 시작 지점 바로 앞에 걸어 들어갈 수 있는 큰 크레이터 하나를 보장한다
+    craters.push({ x:-6, z:-40, R:19 });
+    var r = mulberry32(20260908), guard = 0;
+    while(craters.length < 90 && guard++ < 3000){
+      var u = r();
+      var R = Math.min(3.2 * Math.pow(1-u, -1/1.8), 24);
+      var cx = (r()*2-1)*74, cz = (r()*2-1)*74;
+      if(Math.hypot(cx, cz) < R + 15) continue;      // 시작 광장은 비워 둔다
+      craters.push({ x:cx, z:cz, R:R });
+    }
+    craters.sort(function(a,b){ return b.R - a.R; });
+  }
+}
+function bodyFeature(x, z){
+  var k = bodyKey, i, h = 0;
+  if(k === 'moon'){
+    for(i=0;i<craters.length;i++){
+      var c = craters[i];
+      var d = Math.hypot(x-c.x, z-c.z) / c.R;
+      if(d > 1.45) continue;
+      var bowl = -c.R * 0.24 * (1 - d*d);                                   // 그릇
+      var rim  =  c.R * 0.115 * Math.exp(-Math.pow((d-1.0)/0.17, 2));       // 테두리 융기
+      h += (bowl + rim) * smoothstep(1.45, 0.0, d);
+    }
+    return h;   // 테두리 융기가 없으면 크레이터가 아니라 그냥 웅덩이로 보인다
+  }
+  if(k === 'mars'){
+    function ridged(xx, zz, f){
+      var v = fbm01(xx, zz, 4, f, 0.5, 2.1);
+      v = 1 - Math.abs(2*v - 1);
+      return v*v;
+    }
+    var mask = smoothstep(0.55, 0.86, ridged(x, z, 1/95));
+    var cut  = smoothstep(0.40, 0.76, ridged(x*1.7+300, z*1.7, 1/45));
+    h = -9.0 * mask * cut;
+    var stepped = Math.round(h/2.2)*2.2;             // 계단식 지층
+    h = lerp(h, stepped, 0.55);
+    h += 1.0 * Math.sin((x*0.62 + z*0.28)*0.10 + fbm(x,z,2,1/40,0.5,2)*3.0);  // 모래언덕
+    return h;
+  }
+  if(k === 'europa'){
+    var scales = [1/60, 1/33, 1/18];
+    for(i=0;i<scales.length;i++){
+      var f = scales[i];
+      var w = fbm01(x + f*900, z, 3, f, 0.5, 2.0);
+      var band = smoothstep(0.485, 0.500, w) - smoothstep(0.500, 0.515, w);   // 얇은 띠
+      h -= 2.4 * band * (f*60);                     // 큰 균열일수록 깊게
+    }
+    return h;
+  }
+  return 0;
+}
+
+/* ---------- 하늘에 뜬 다른 천체 ---------- */
+/* 겉보기 크기를 실제 비율로 맞춘다.
+   달에서 본 지구 = 1.9° (지구에서 본 보름달 0.52° 의 약 3.7배)
+   유로파에서 본 목성 = 11.8° (보름달의 약 23배) */
+function makeEarthTex(){
+  var c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  var g2 = c.getContext('2d'), r = mulberry32(31);
+  g2.fillStyle = '#1c4f8f'; g2.fillRect(0,0,512,256);                 // 바다
+  g2.fillStyle = '#2f6ea8';
+  for(var i=0;i<40;i++){ g2.beginPath();
+    g2.ellipse(r()*512, r()*256, 20+r()*50, 10+r()*24, r()*3, 0, 6.3); g2.fill(); }
+  g2.fillStyle = '#3f7d3a';                                           // 대륙
+  for(var i=0;i<26;i++){ g2.beginPath();
+    g2.ellipse(r()*512, 40+r()*176, 16+r()*46, 10+r()*30, r()*3, 0, 6.3); g2.fill(); }
+  g2.fillStyle = '#6f9a48';
+  for(var i=0;i<20;i++){ g2.beginPath();
+    g2.ellipse(r()*512, 50+r()*156, 8+r()*22, 6+r()*16, r()*3, 0, 6.3); g2.fill(); }
+  g2.fillStyle = '#f2f6fa';                                           // 극관
+  g2.fillRect(0,0,512,16); g2.fillRect(0,240,512,16);
+  g2.globalAlpha = 0.55;                                              // 구름
+  for(var i=0;i<44;i++){ g2.beginPath();
+    g2.ellipse(r()*512, r()*256, 18+r()*40, 5+r()*12, r()*3, 0, 6.3); g2.fill(); }
+  g2.globalAlpha = 1;
+  var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+}
+function makeJupiterTex(){
+  var c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  var g2 = c.getContext('2d'), r = mulberry32(57);
+  var bands = ['#e8d9bd','#c99a6a','#efe4cd','#a97f5c','#dcc9a6','#b98d63','#f0e6d2','#c0916a'];
+  var y = 0;
+  while(y < 256){
+    var hgt = 8 + r()*26;
+    g2.fillStyle = bands[Math.floor(r()*bands.length)];
+    g2.fillRect(0, y, 512, hgt);
+    y += hgt;
+  }
+  g2.globalAlpha = 0.35;                                              // 소용돌이
+  for(var i=0;i<70;i++){ g2.fillStyle = bands[Math.floor(r()*bands.length)];
+    g2.beginPath(); g2.ellipse(r()*512, r()*256, 14+r()*44, 3+r()*7, 0, 0, 6.3); g2.fill(); }
+  g2.globalAlpha = 1;
+  g2.fillStyle = '#b5533a';                                           // 대적점
+  g2.beginPath(); g2.ellipse(150, 168, 46, 20, 0, 0, 6.3); g2.fill();
+  g2.fillStyle = '#8f3c2a';
+  g2.beginPath(); g2.ellipse(150, 168, 26, 11, 0, 0, 6.3); g2.fill();
+  var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+}
+var skyBody = null, skyBodyLabel = '';
+function buildSkyBody(key){
+  if(skyBody){
+    scene.remove(skyBody);
+    skyBody.geometry.dispose();
+    if(skyBody.material.map) skyBody.material.map.dispose();
+    skyBody.material.dispose();
+    skyBody = null;
+  }
+  skyBodyLabel = '';
+  var cfg = null;
+  if(key === 'moon')   cfg = { label:'지구', ang:1.9,  tex:makeEarthTex(),   az:2.98, alt:0.26 };
+  if(key === 'europa') cfg = { label:'목성', ang:11.8, tex:makeJupiterTex(), az:2.90, alt:0.24 };
+  if(!cfg) return;
+  var DIST = 300;
+  var radius = DIST * Math.tan(cfg.ang*0.5*Math.PI/180);
+  skyBody = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, 32, 24),
+    new THREE.MeshLambertMaterial({ map:cfg.tex, fog:false })
+  );
+  // Lambert 라서 태양 방향에 따라 위상이 저절로 생긴다 (차고 기운다)
+  skyBody.userData = { dist:DIST, az:cfg.az, alt:cfg.alt };
+  skyBody.frustumCulled = false;
+  skyBody.rotation.z = 0.35;
+  scene.add(skyBody);
+  skyBodyLabel = cfg.label;
+}
+
 /* ---------- 지형 ---------- */
 var TER = { size:160, seg:quality.seg, cell:0, H:null, mesh:null };
 var platforms = [];    // { x, z, w, d, top }  — 윗면에 올라설 수 있는 상자
@@ -479,15 +622,20 @@ function rampField(x, z){
   return best;
 }
 function terrainHeightRaw(x, z){
-  var h = 6.5 * fbm(x, z, 5, 1/70, 0.5, 2.03);
-  h += 2.2 * fbm(x+400, z-220, 3, 1/26, 0.5, 2.1);
+  var amp = (bodyKey === 'mars') ? 4.2 : (bodyKey === 'earth' ? 6.5 : 5.0);
+  var h = amp * fbm(x, z, 5, 1/70, 0.5, 2.03);
+  h += 2.0 * fbm(x+400, z-220, 3, 1/26, 0.5, 2.1);
   var r = Math.hypot(x, z);
   h *= smoothstep(11, 28, r);                 // 시작 광장은 평평하게
-  var rp = rampField(x, z);
-  if(rp > -900) h = Math.max(h, rp);
+  h += bodyFeature(x, z) * smoothstep(9, 20, r);   // 크레이터·협곡·얼음 균열
+  if(bodyKey === 'earth'){                    // 경사 램프는 지구 훈련장에만
+    var rp = rampField(x, z);
+    if(rp > -900) h = Math.max(h, rp);
+  }
   return h;
 }
 function buildTerrain(){
+  prepareBody(bodyKey);
   if(TER.mesh){ scene.remove(TER.mesh); TER.mesh.geometry.dispose(); }
   var SEG = TER.seg, S = TER.size;
   TER.cell = S / SEG;
@@ -509,7 +657,8 @@ function buildTerrain(){
   var base = new THREE.Color(BODIES[bodyKey].ground);
   var low = base.clone().multiplyScalar(0.82);
   var high = base.clone().lerp(new THREE.Color(0xffffff), 0.22);
-  var rock = new THREE.Color(bodyKey==='earth' ? 0x8a8272 : (bodyKey==='moon' ? 0xb4b1ab : 0xc07a4e));
+  var rock = new THREE.Color(bodyKey==='earth' ? 0x8a8272 :
+  (bodyKey==='moon' ? 0xb4b1ab : (bodyKey==='europa' ? 0x9fb0c6 : 0xc07a4e)));
   var c = new THREE.Color();
   for(var j=0;j<=SEG;j++) for(var i=0;i<=SEG;i++){
     var idx = j*(SEG+1)+i;
@@ -602,7 +751,8 @@ function buildProps(){
 
   // 바위
   var r = mulberry32(11), rockGeo = new THREE.IcosahedronGeometry(1, 1);
-  var rockMat = matte(bodyKey==='earth' ? 0x7d7466 : (bodyKey==='moon' ? 0xa9a6a0 : 0x9a5a3a), 3);
+  var rockMat = matte(bodyKey==='earth' ? 0x7d7466 :
+    (bodyKey==='moon' ? 0xa9a6a0 : (bodyKey==='europa' ? 0xc8d4e2 : 0x9a5a3a)), 3);
   var inst = new THREE.InstancedMesh(rockGeo, rockMat, quality.rocks);
   inst.castShadow = quality.shadow; inst.receiveShadow = quality.shadow;
   var dummy = new THREE.Object3D(), n = 0, tries = 0;
@@ -921,6 +1071,7 @@ var SPAWN = new THREE.Vector3(0, 0, 6);
 var CAM = { yaw:0, pitch:0.16, dist:5.0, cur:5.0, target:new THREE.Vector3(),
             trauma:0, fov:60 };
 var camTarget = new THREE.Vector3();
+var _eye = new THREE.Vector3(), _look = new THREE.Vector3();
 
 function boomAllowed(origin, dir, want){
   var SAMPLES = 10, RAD = 0.32, allowed = want, step = want/SAMPLES;
@@ -945,6 +1096,14 @@ function noise1(t){ return Math.sin(t*1.7)*0.5 + Math.sin(t*3.1+1.3)*0.3 + Math.
 /* ---------- 입력 ---------- */
 var keys = {}, stickVec = {x:0,y:0}, jumpTouch = false, uiBusy = false;
 var mouse = { down:false, lx:0, ly:0, dragging:false };
+var zoomOn = false;                 // 관측(확대) 모드
+function setZoom(v){
+  zoomOn = v;
+  var b = document.getElementById('btnZoom');
+  b.setAttribute('aria-pressed', String(v));
+  b.style.background = v ? 'rgba(194,143,44,.95)' : 'rgba(246,241,228,.94)';
+  document.getElementById('zoomHint').hidden = !v;
+}
 
 addEventListener('keydown', function(e){
   var k = e.key.toLowerCase();
@@ -952,6 +1111,7 @@ addEventListener('keydown', function(e){
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].indexOf(k) >= 0) e.preventDefault();
   if(k === ' ') P.buffer = jumpBufferTime();
   if(k === 'r') respawn();
+  if(k === 'z') setZoom(!zoomOn);
 });
 addEventListener('keyup', function(e){ keys[e.key.toLowerCase()] = false; });
 addEventListener('blur', function(){ keys = {}; });
@@ -967,7 +1127,7 @@ addEventListener('mousemove', function(e){
   if(!mouse.down) return;
   var dx = e.clientX - mouse.lx, dy = e.clientY - mouse.ly;
   mouse.lx = e.clientX; mouse.ly = e.clientY;
-  var s = 0.0026 * opt.sens * (opt.mode === 'easy' ? 0.6 : 1);
+  var s = 0.0026 * opt.sens * (opt.mode === 'easy' ? 0.6 : 1) * (zoomOn ? 0.30 : 1);
   CAM.yaw   -= dx * s;
   CAM.pitch  = clamp(CAM.pitch + dy * s, -0.62, 1.15);
   camIdle = 0;
@@ -1076,22 +1236,28 @@ function setBody(key){
   skyUniforms.uGlow.value = (key === 'earth') ? 0.55 : 0.12;
   scene.fog = b.fog > 0 ? new THREE.FogExp2(b.fogC, b.fog) : null;
   stars.visible = (b.fog === 0);
-  hemi.color.set(key==='earth' ? 0xbcd8f5 : (key==='moon' ? 0x2a3040 : 0xd9a878));
+  hemi.color.set(key==='earth' ? 0xbcd8f5 :
+    (key==='mars' ? 0xd9a878 : (key==='europa' ? 0x2b3950 : 0x2a3040)));
   // 공기가 없는 곳의 햇빛은 물들지 않는다 — 달을 회색으로 보이게 하는 핵심
-  sun.color.set(key==='earth' ? 0xfff4e2 : (key==='moon' ? 0xffffff : 0xffe8d0));
+  sun.color.set(key==='mars' ? 0xffe8d0 : (key==='earth' ? 0xfff4e2 : 0xffffff));
   hemi.intensity = key==='earth' ? 0.55 : 0.30;
   P.bestJump = 0; P.bestAir = 0;
   document.getElementById('uiBody').textContent = b.name;
   document.getElementById('uiGrav').textContent = b.label;
   document.getElementById('uiJump').textContent = '0.00 m';
   document.getElementById('uiAir').textContent = '0.00 초';
+  buildSkyBody(key);
+  document.getElementById('uiSkyRow').hidden = !skyBodyLabel;
+  document.getElementById('uiSky').textContent = skyBodyLabel || '—';
   buildTerrain(); buildProps();
   P.pos.y = sampleH(P.pos.x, P.pos.z);
   if(!firstBodySet){
     if(key === 'moon'){
-      showRecord('달의 힘으로 바뀌었어요', '달도 우리를 끌어당겨요. 지구보다 약할 뿐이에요');
+      showRecord('달에 왔어요', '하늘을 올려다보면 지구가 보여요. 달도 우리를 끌어당겨요 — 지구보다 약할 뿐이에요');
     } else if(key === 'mars'){
-      showRecord('화성의 힘으로 바뀌었어요', '지구의 약 3분의 1이에요');
+      showRecord('화성에 왔어요', '끌어당기는 힘은 지구의 약 3분의 1이에요');
+    } else if(key === 'europa'){
+      showRecord('유로파에 왔어요', '목성의 얼음 위성이에요. 하늘에 목성이 크게 떠 있어요');
     } else {
       showRecord('지구로 돌아왔어요', '이제 기준이 되는 힘이에요');
     }
@@ -1257,24 +1423,43 @@ function tick(t){
   CAM.target.y = lerp(CAM.target.y, camTarget.y, 1 - Math.exp(-6*dt));
   var cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
   var dir = new THREE.Vector3(Math.sin(CAM.yaw)*cp, sp, Math.cos(CAM.yaw)*cp);
-  var allowed = boomAllowed(CAM.target, dir, CAM.dist);
-  if(allowed < CAM.cur) CAM.cur = allowed;
-  else CAM.cur += (allowed - CAM.cur) * (1 - Math.exp(-3.5*dt));
-  camera.position.copy(CAM.target).addScaledVector(dir, CAM.cur);
-  camera.lookAt(CAM.target);
+  if(zoomOn){
+    // 관측할 때는 우주비행사의 눈으로 본다 (3인칭이면 자기 뒤통수가 시야를 가린다)
+    _eye.set(P.pos.x, P.pos.y + 1.62, P.pos.z);
+    camera.position.copy(_eye);
+    _look.copy(_eye).addScaledVector(dir, -1);
+    camera.lookAt(_look);
+    if(CH.mesh) CH.mesh.visible = false;
+    if(CH.blob) CH.blob.visible = false;
+  } else {
+    if(CH.mesh) CH.mesh.visible = true;
+    if(CH.blob) CH.blob.visible = true;
+    var allowed = boomAllowed(CAM.target, dir, CAM.dist);
+    if(allowed < CAM.cur) CAM.cur = allowed;
+    else CAM.cur += (allowed - CAM.cur) * (1 - Math.exp(-3.5*dt));
+    camera.position.copy(CAM.target).addScaledVector(dir, CAM.cur);
+    camera.lookAt(CAM.target);
+  }
   if(CAM.trauma > 0.001){
     var s = CAM.trauma*CAM.trauma, tt = t/1000;
     camera.rotation.x += s*0.035*noise1(tt*22);
     camera.rotation.y += s*0.035*noise1(tt*22+17);
     camera.rotation.z += s*0.020*noise1(tt*22+41);
   }
-  var wantFov = lerp(60, 68, P.runBlend);
+  var wantFov = zoomOn ? 15 : lerp(60, 68, P.runBlend);
   if(Math.abs(camera.fov - wantFov) > 0.05){
     camera.fov += (wantFov - camera.fov) * (1 - Math.exp(-4*dt));
     camera.updateProjectionMatrix();
   }
   sky.position.copy(camera.position);
   stars.position.copy(camera.position);
+  if(skyBody){
+    var ud = skyBody.userData;
+    skyBody.position.set(
+      camera.position.x + Math.sin(ud.az)*Math.cos(ud.alt)*ud.dist,
+      camera.position.y + Math.sin(ud.alt)*ud.dist,
+      camera.position.z + Math.cos(ud.az)*Math.cos(ud.alt)*ud.dist);
+  }
 
   // 그림자 광원 추적 (텍셀 단위 양자화로 떨림 방지)
   var q = (2*SS)/1024;
@@ -1305,6 +1490,9 @@ function reapplyQuality(){
   renderer.shadowMap.enabled = quality.shadow;
   sun.castShadow = quality.shadow;
   TER.seg = quality.seg;
+  buildSkyBody(key);
+  document.getElementById('uiSkyRow').hidden = !skyBodyLabel;
+  document.getElementById('uiSky').textContent = skyBodyLabel || '—';
   buildTerrain(); buildProps();
   resize();
   qualHistory = 1;
@@ -1350,8 +1538,10 @@ addEventListener('keydown', function(e){
   document.getElementById('help').classList.remove('on');
 });
 
-var bodyOrder = ['earth','moon','mars'], bodyIdx = 0;
+var bodyOrder = ['earth','moon','mars','europa'], bodyIdx = 0;
+document.getElementById('btnZoom').onclick = function(){ setZoom(!zoomOn); };
 document.getElementById('btnGrav').onclick = function(){
+  setZoom(false);
   bodyIdx = (bodyIdx+1) % bodyOrder.length;
   setBody(bodyOrder[bodyIdx]);
 };
