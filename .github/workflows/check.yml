@@ -9,7 +9,7 @@ on:
   workflow_dispatch:        # Actions 탭에서 단추로 직접 실행할 수 있다
 
 jobs:
-  검사:
+  verify:
     name: 배포 전 검사
     runs-on: ubuntu-latest
     steps:
@@ -22,10 +22,10 @@ jobs:
       - name: 게임 파일 검사
         run: node tools/check.mjs
 
-  화면:
+  shots:
     name: 화면 촬영
     runs-on: ubuntu-latest
-    needs: 검사
+    needs: verify
     steps:
       - uses: actions/checkout@v4
 
