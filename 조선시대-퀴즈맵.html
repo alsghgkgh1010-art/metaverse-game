@@ -433,6 +433,7 @@ canvas{
     <span class="chip" id="chipTime">⏱ 0:00</span>
     <span class="hud-spacer"></span>
     <button class="icon-btn" id="btnJump" title="마당 골라 가기" style="display:none">🗺️</button>
+    <button class="icon-btn" id="btnMusic" title="음악 끄기" aria-pressed="false">🎵</button>
     <button class="icon-btn" id="btnSound" title="소리 끄기" aria-pressed="false">🔊</button>
     <button class="icon-btn" id="btnHelp" title="도움말">❓</button>
     <button class="icon-btn" id="btnQuit" title="처음으로">⏏</button>
@@ -837,7 +838,7 @@ var 지도 = [
   '#.....#######.....#######....#',
   '#..G..#..c..#.,,..#..Q..#..G.#',
   '#.....###,##L.,,..L##,###....#',
-  '#...,,,,,,,,,,,,,,,,,,,,,,...#',
+  '#...,,,,s,,,,,,,,,,,,,,,,,...#',
   '#.L....T......,,.......T....L#',
   '#..######..#########..######.#',
   '#..#....#..#.......#..#....#.#',
@@ -845,11 +846,11 @@ var 지도 = [
   '#..#....#..#.......#..#....#.#',
   '#..##,###..####,####..##,###.#',
   '#....,........,,........,....#',
-  '#...,,,,,,,,,,,,,,,,,,,,,,...#',
+  '#...,,,,,,,,,,,,,,,,s,,,,,...#',
   '#.L......L....,,.....L......L#',
   '#...JJc.......,n.........JJ..#',
   '#..........F..,,...F.........#',
-  '#.......MM....,,.....MM.c....#',
+  '#.......MM....,,.....MMoc....#',
   '#..GT.........,@....P.....TG.#',
   '#............................#',
   '##############################' ],
@@ -885,7 +886,7 @@ var 지도 = [
   '#.#Q.##..##Q.#,,.#r.##..##Q.##',
   '#.#..##..##..#,,.#..##..##..##',
   '#.#,###,###,##,,.#,###,###,###',
-  '#..,...,...,..,,..,...,...,..#',
+  '#..,s..,...,..,,..,...,.s.,..#',
   '#,L,,,,L,,,,,,,,n,,,,,L,,,,,L#',
   '#,,BB,,,BB,,,,,,,,,BB,,,BB,,,#',
   '#.............,,.............#',
@@ -932,9 +933,9 @@ var 지도 = [
   '#...#.JJ...#...Q...#...JJ#...#',
   '#..,,......#.......#.....,,..#',
   '#...#......####,####.....#...#',
-  '#...#.W..c.....,,....c..W#...#',
+  '#...#.W..c..o..,,....c..W#...#',
   '#...#..........F,........#...#',
-  '#...#,,,,,,,L,,,,,L,Q,,,,#...#',
+  '#...#,s,,,,,L,,,,,L,Q,s,,#...#',
   '#...#L.........,,........L...#',
   '#...#..Q.MM..n.,,...MM.r.#...#',
   '#.T.###########,,#########.T.#',
@@ -1005,6 +1006,9 @@ var Snd = (function(){
     portal:function(){ tone(392,0,.10); tone(523,.08,.10); tone(659,.16,.10); tone(784,.24,.22); },
     step:  function(){ tone(150,0,.03,'square',.03); },
     coin:  function(){ tone(988,0,.07); tone(1319,.06,.12); },
+    caught:function(){ tone(320,0,.13,'sawtooth',.12); tone(220,.11,.20,'sawtooth',.12); tone(160,.28,.26,'sawtooth',.10); },
+    push:  function(){ tone(110,0,.10,'square',.07); tone(90,.07,.14,'square',.05); },
+    combo: function(n){ for(var i=0;i<Math.min(n,4);i++) tone(660+i*140, i*0.06, .16); },
     relic: function(){ [523,659,784,1047].forEach(function(f,i){ tone(f, i*0.10, .30, 'triangle', .15); }); },
     clear: function(){
       [523,659,784,1047,784,1047,1319].forEach(function(f,i){ tone(f, i*0.13, .3, 'triangle', .14); });
@@ -1020,7 +1024,7 @@ function newState(nick){
     map: 0,
     x: 0, y: 0, dir: 0,
     answered: [],          // 문항별 {done, right, usedHint, tries, given}
-    엽전: 0, 모은유물: {}, 먹은엽전: {},
+    엽전: 0, 모은유물: {}, 먹은엽전: {}, 연속: 0,
     score: 0,
     startAt: Date.now(),
     elapsed: 0,
@@ -1058,6 +1062,7 @@ function loadMap(m){
   MAPR = rows.length; MAPC = rows[0].length;
   MW = MAPC*T; MH = MAPR*T;
   grid = []; qTiles = []; portal = null; coins = []; relic = null; npc = null;
+  guards = []; jars = []; 들킴 = 0;
   var qIdx = qOfMap(m), qn = 0;
   var got = (S.모은유물 && S.모은유물[m]) ? true : false;
   for(var r=0;r<MAPR;r++){
@@ -1071,6 +1076,8 @@ function loadMap(m){
       else if(ch === 'c'){ coins.push({ c:c, r:r, taken:false }); ch = '.'; }
       else if(ch === 'r'){ relic = { c:c, r:r, taken:got }; ch = '.'; }
       else if(ch === 'n'){ npc = { c:c, r:r, armed:true }; ch = '#'; }   // 사람은 지나갈 수 없다
+      else if(ch === 's'){ guards.push({ c:c, r:r }); ch = '.'; }        // 순찰 군사
+      else if(ch === 'o'){ jars.push({ c:c, r:r }); }                    // 밀 수 있는 항아리(그대로 둔다)
       row.push(ch);
     }
     grid.push(row);
@@ -1082,7 +1089,9 @@ function loadMap(m){
   S.x = spawn.x; S.y = spawn.y; S.dir = 0;
   cam.x = clamp(S.x - W/2, 0, Math.max(0, MW-W));
   cam.y = clamp(S.y - H/2, 0, Math.max(0, MH-H));
+  군사초기화();
   buildStatic(); buildMotes();
+  BGM.분위기(m); if(BGM.켜짐()) BGM.시작();
   $('hudMapNo').textContent = m+1;
   $('hudMapName').textContent = 마당[m].이름 + ' · ' + 마당[m].부제;
   updateGoals();
@@ -1393,6 +1402,18 @@ function drawProp(ch, x, y, c, r, th){
     }
     statG.fillStyle = 'rgba(0,0,0,.18)';
     if(grid[r-1] && grid[r-1][c] !== 'w') statG.fillRect(x, y, T, 4);
+  } else if(ch === 'w'){                             // 물 (연못·해자)
+    statG.fillStyle = '#2f5d78'; statG.fillRect(x, y, T, T);
+    var gw = statG.createLinearGradient(x, y, x, y+T);
+    gw.addColorStop(0, 'rgba(120,190,220,.45)'); gw.addColorStop(1, 'rgba(20,60,90,.35)');
+    statG.fillStyle = gw; statG.fillRect(x, y, T, T);
+    statG.fillStyle = 'rgba(255,255,255,.22)';
+    for(var i=0;i<3;i++){
+      var wy = y + 8 + i*13 + hash2(c, r+i)*5;
+      statG.fillRect(x + 4 + hash2(c+i, r)*10, wy, 16, 2);
+      statG.fillRect(x + 26 + hash2(c, r+i*3)*8, wy + 5, 10, 2);
+    }
+    statG.fillStyle = 'rgba(0,0,0,.18)'; statG.fillRect(x, y, T, 3);
   } else if(ch === 'G'){                             // 풀숲
     for(var i=0;i<7;i++){
       var gx = x + 4 + hash2(c*13+i, r*7)*(T-8), gy = y + 12 + hash2(c*5, r*23+i)*(T-18);
@@ -1638,12 +1659,14 @@ function render(t, dt){
   g.save(); g.translate(-ox, -oy);
   for(var i=0;i<coins.length;i++) if(!coins[i].taken) drawCoin(coins[i].c*T, coins[i].r*T, t);
   if(relic && !relic.taken) drawRelic(relic.c*T, relic.r*T, t);
+  for(var i=0;i<jars.length;i++) drawJar(jars[i].c*T, jars[i].r*T);
   if(npc) drawNPC(npc.c*T, npc.r*T, t);
   for(var i=0;i<qTiles.length;i++){
     var q = qTiles[i], a = S.answered[q.q];
     drawScroll(q.c*T, q.r*T, !!(a && a.done), t);
   }
   if(portal) drawGate(portal.c*T, portal.r*T, canPass(), t);
+  for(var i=0;i<guards.length;i++) drawGuard(guards[i], t);
   drawPlayer(S.x, S.y, S.dir, moving, t);
   g.restore();
 
@@ -1776,13 +1799,16 @@ function loop(t){
       var sp = 162 * dt;
       var nx = S.x + vx*sp;
       if(!blocked(nx, S.y)) S.x = nx;
+      else if(Math.abs(vx) > 0.5) 항아리밀기(vx, 0);
       var ny = S.y + vy*sp;
       if(!blocked(S.x, ny)) S.y = ny;
+      else if(Math.abs(vy) > 0.5) 항아리밀기(0, vy);
 
       stepTimer += dt;
       if(stepTimer > .30){ stepTimer = 0; Snd.step(); }
       checkTiles();
     }
+    군사갱신(dt);
     S.elapsed = (Date.now() - S.startAt)/1000;
     $('chipTime').textContent = '⏱ ' + fmtTime(S.elapsed);
   }
@@ -1955,12 +1981,18 @@ function onCheck(){
   checked = true;
   a.done = true; a.right = ok;
   var pts = ok ? (a.usedHint ? 60 : (a.tries > 1 ? 70 : 100)) : 0;
+  if(ok){
+    S.연속 = (S.연속 || 0) + 1;
+    if(S.연속 >= 2){ var b = Math.min(S.연속, 5) * 15; pts += b; Snd.combo(S.연속); }
+  } else S.연속 = 0;
   S.score += pts;
 
   var vd2 = $('qVerdict');
   vd2.className = 'verdict ' + (ok ? 'ok on' : 'no on');
   $('qVerdictTitle').textContent = ok ? '⭕ 정답이에요!' : '❌ 아쉬워요';
-  $('qVerdictAns').textContent = ok ? ('+' + pts + '점') : ('정답: ' + q.정답);
+  $('qVerdictAns').textContent = ok
+    ? ('+' + pts + '점' + (S.연속 >= 2 ? ('   🔥 연속 ' + S.연속 + '문제 정답!') : ''))
+    : ('정답: ' + q.정답);
   $('qVerdictWhy').textContent = q.해설 || '';
   if(ok) Snd.right(); else Snd.wrong();
 
@@ -2072,7 +2104,7 @@ function finish(){
   S._wrongList = wrongList;
   $('btnRetryWrong').style.display = wrongList.length ? '' : 'none';
 
-  Snd.clear();
+  Snd.clear(); BGM.정지();
   store.del('save');
   show('result');
 }
@@ -2080,6 +2112,7 @@ function finish(){
 /* ---------- 화면 연결 ---------- */
 $('btnStart').onclick = function(){
   Snd.resume();
+  if(store.get('music') !== '0'){ BGM.소리(0.22); BGM.시작(); }
   var nick = ($('nick').value || '').trim() || '탐험가';
   store.set('nick', nick);
   S = newState(nick);
@@ -2100,7 +2133,7 @@ $('btnResume').onclick = function(){
     updateHud(); show('game');
   }catch(e){}
 };
-$('btnQuit').onclick = function(){ save(); show('start'); refreshResume(); };
+$('btnQuit').onclick = function(){ save(); BGM.정지(); show('start'); refreshResume(); };
 $('btnHome').onclick = function(){ show('start'); refreshResume(); };
 $('btnPrint').onclick = function(){ window.print(); };
 $('btnRetryWrong').onclick = function(){
@@ -2197,6 +2230,11 @@ $('btnCloseHelp').onclick = function(){ closeOv('help'); busy = false; };
 $('btnTeacher').onclick = function(){ openOv('teacher'); };
 $('btnCloseTeacher').onclick = function(){ closeOv('teacher'); };
 
+$('btnMusic').onclick = function(){
+  if(BGM.켜짐()){ BGM.정지(); this.textContent = '🎵̸'; this.title = '음악 켜기'; store.set('music','0'); }
+  else { BGM.소리(0.22); BGM.분위기(S ? S.map : 0); BGM.시작(); this.textContent = '🎵'; this.title = '음악 끄기'; store.set('music','1'); }
+  this.setAttribute('aria-pressed', String(!BGM.켜짐()));
+};
 $('btnSound').onclick = function(){
   var on = !Snd.isOn(); Snd.setOn(on);
   this.textContent = on ? '🔊' : '🔇';
@@ -2280,6 +2318,315 @@ function syncTeacherUI(){
 
 setupCanvases();
 buildVignette();
+
+/* ============================================================================
+   배경 음악 — 국악풍. 음원 파일 없이 코드로 만든다.
+   평조 5음계(궁·상·각·치·우)에 굿거리장단(12/8)을 얹었다.
+   ============================================================================ */
+var BGM = (function(){
+  var ac = null, master = null, on = false, timer = null;
+  var bar = 0, nextT = 0;
+  var 분위기 = { 빠르기:84, 밀도:0.55, 저음:true };
+
+  // 평조 5음계 (C D F G A) — 국악의 밝고 씩씩한 느낌
+  var 음계 = [261.63, 293.66, 349.23, 392.00, 440.00,
+              523.25, 587.33, 698.46, 783.99, 880.00];
+  var 멜로디자리 = 4;
+
+  function ctx(){
+    if(ac) return ac;
+    try{ var C = window.AudioContext || window.webkitAudioContext; ac = new C(); }
+    catch(e){ return null; }
+    master = ac.createGain();
+    master.gain.value = 0.22;                 // 교실에서 쓰므로 작게
+    var comp = ac.createDynamicsCompressor();
+    master.connect(comp); comp.connect(ac.destination);
+    return ac;
+  }
+
+  /* 대금 — 숨소리 섞인 부드러운 지속음, 끝에 살짝 떠는 시김새 */
+  function 대금(f, t, dur, vol){
+    var a = ac, o = a.createOscillator(), g = a.createGain(), lp = a.createBiquadFilter();
+    var vib = a.createOscillator(), vg = a.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(f, t);
+    lp.type = 'lowpass'; lp.frequency.setValueAtTime(1800, t);
+    vib.type = 'sine'; vib.frequency.setValueAtTime(5.2, t);
+    vg.gain.setValueAtTime(0, t);
+    vg.gain.linearRampToValueAtTime(f*0.012, t + dur*0.45);   // 뒤로 갈수록 떨림 (시김새)
+    vib.connect(vg); vg.connect(o.frequency);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.09);
+    g.gain.setValueAtTime(vol, t + dur*0.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(lp); lp.connect(g); g.connect(master);
+    o.start(t); o.stop(t + dur + 0.05);
+    vib.start(t); vib.stop(t + dur + 0.05);
+  }
+
+  /* 가야금 — 뜯는 소리. 빠르게 감쇠 */
+  function 가야금(f, t, vol){
+    var a = ac, o = a.createOscillator(), g = a.createGain(), lp = a.createBiquadFilter();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t);
+    o.frequency.exponentialRampToValueAtTime(f*0.995, t + 0.5);
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(2600, t);
+    lp.frequency.exponentialRampToValueAtTime(700, t + 0.5);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+    o.connect(lp); lp.connect(g); g.connect(master);
+    o.start(t); o.stop(t + 0.95);
+  }
+
+  /* 장구 — 덩(낮고 둥근 소리) / 덕(높고 짧은 소리) */
+  function 장구(t, 낮음, vol){
+    var a = ac, o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(낮음 ? 128 : 320, t);
+    o.frequency.exponentialRampToValueAtTime(낮음 ? 58 : 190, t + 0.16);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (낮음 ? 0.30 : 0.14));
+    o.connect(g); g.connect(master);
+    o.start(t); o.stop(t + 0.34);
+    if(!낮음){                                  // 채편의 '따닥' 잔향
+      var n = a.createOscillator(), ng = a.createGain();
+      n.type = 'square'; n.frequency.setValueAtTime(1500, t);
+      ng.gain.setValueAtTime(vol*0.16, t);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+      n.connect(ng); ng.connect(master); n.start(t); n.stop(t + 0.06);
+    }
+  }
+
+  /* 한 장단(12/8 굿거리) 예약 */
+  function 한장단(t0){
+    var 박 = 60 / 분위기.빠르기 / 2;             // 8분음표 길이
+    var 장단 = [1,0,0, 2,0,2, 1,0,0, 2,0,0];     // 1=덩, 2=덕
+    for(var i=0;i<12;i++){
+      if(!장단[i]) continue;
+      장구(t0 + i*박, 장단[i] === 1, 장단[i] === 1 ? 0.28 : 0.15);
+    }
+    // 가야금 — 장단에 맞춘 뜯기
+    for(var i=0;i<12;i+=3){
+      if(Math.random() > 분위기.밀도) continue;
+      var 자리 = Math.max(0, 멜로디자리 - 3 + Math.floor(Math.random()*3));
+      가야금(음계[자리], t0 + i*박, 0.10);
+    }
+    // 대금 — 한 장단에 한두 음, 5음계 위를 천천히 걷는다
+    var n = (Math.random() < 분위기.밀도) ? 2 : 1;
+    for(var k=0;k<n;k++){
+      멜로디자리 += (Math.random()<0.5 ? -1 : 1) * (Math.random()<0.75 ? 1 : 2);
+      if(멜로디자리 < 2) 멜로디자리 = 3;
+      if(멜로디자리 > 9) 멜로디자리 = 8;
+      대금(음계[멜로디자리], t0 + (k===0 ? 0 : 6*박) + 박*0.1,
+           박*(k===0 ? 3.4 : 2.6), 0.085);
+    }
+    // 낮은 지속음 (장중한 느낌)
+    if(분위기.저음 && bar % 2 === 0){
+      var a = ac, o = a.createOscillator(), g = a.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(음계[0]/2, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.055, t0 + 0.6);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 박*12);
+      o.connect(g); g.connect(master); o.start(t0); o.stop(t0 + 박*12 + 0.1);
+    }
+  }
+
+  function 예약루프(){
+    if(!on || !ac) return;
+    var 박 = 60 / 분위기.빠르기 / 2, 길이 = 박*12;
+    while(nextT < ac.currentTime + 1.6){
+      한장단(nextT); nextT += 길이; bar++;
+    }
+    timer = setTimeout(예약루프, 400);
+  }
+
+  return {
+    시작: function(){
+      if(on) return;
+      if(!ctx()) return;
+      if(ac.state === 'suspended'){ try{ ac.resume(); }catch(e){} }
+      on = true; bar = 0; nextT = ac.currentTime + 0.15;
+      예약루프();
+    },
+    정지: function(){
+      on = false;
+      if(timer){ clearTimeout(timer); timer = null; }
+      if(master && ac){
+        try{
+          master.gain.cancelScheduledValues(ac.currentTime);
+          master.gain.setValueAtTime(master.gain.value, ac.currentTime);
+          master.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.4);
+        }catch(e){}
+      }
+    },
+    켜짐: function(){ return on; },
+    소리: function(v){ if(master && ac){ try{
+        master.gain.cancelScheduledValues(ac.currentTime);
+        master.gain.setValueAtTime(v, ac.currentTime);
+      }catch(e){} } },
+    /* 마당마다 분위기를 바꾼다 */
+    분위기: function(m){
+      var 표 = [
+        { 빠르기:84,  밀도:0.55, 저음:true  },   // 경복궁 — 장중
+        { 빠르기:72,  밀도:0.35, 저음:true  },   // 집현전 — 고요
+        { 빠르기:104, 밀도:0.80, 저음:false },   // 저잣거리 — 흥겨움
+        { 빠르기:112, 밀도:0.88, 저음:false },   // 마당 — 신명
+        { 빠르기:66,  밀도:0.30, 저음:true  }    // 남한산성 — 비장
+      ];
+      분위기 = 표[m] || 표[0];
+    }
+  };
+})();
+
+/* ============================================================================
+   순찰 군사 · 밀 수 있는 항아리 · 연속 정답
+   ============================================================================ */
+var guards = [], jars = [];
+var 들킴 = 0;                       // 들킨 직후 잠깐 무적 (연속으로 잡히지 않게)
+
+function 순찰경로(c, r){
+  // 시작 자리에서 가로로 갈 수 있는 만큼, 안 되면 세로로 — 벽에 부딪힐 때까지
+  var 가로 = 0, 세로 = 0, i;
+  for(i=c+1;i<MAPC && grid[r][i]==='.';i++) 가로++;
+  for(i=c-1;i>0   && grid[r][i]==='.';i--) 가로++;
+  for(i=r+1;i<MAPR && grid[i][c]==='.';i++) 세로++;
+  for(i=r-1;i>0   && grid[i][c]==='.';i--) 세로++;
+  if(가로 >= 세로){
+    var a=c, b=c;
+    while(a-1>0    && grid[r][a-1]==='.') a--;
+    while(b+1<MAPC && grid[r][b+1]==='.') b++;
+    return [{x:a*T+T/2, y:r*T+T/2}, {x:b*T+T/2, y:r*T+T/2}];
+  }
+  var u=r, d=r;
+  while(u-1>0    && grid[u-1][c]==='.') u--;
+  while(d+1<MAPR && grid[d+1][c]==='.') d++;
+  return [{x:c*T+T/2, y:u*T+T/2}, {x:c*T+T/2, y:d*T+T/2}];
+}
+function 군사초기화(){
+  for(var i=0;i<guards.length;i++){
+    var G = guards[i];
+    G.path = 순찰경로(G.c, G.r);
+    G.x = G.path[0].x; G.y = G.path[0].y;
+    G.to = 1; G.dir = 0; G.wait = 0; G.alert = 0;
+  }
+}
+function 군사갱신(dt){
+  for(var i=0;i<guards.length;i++){
+    var G = guards[i], tgt = G.path[G.to];
+    if(G.wait > 0){ G.wait -= dt; }
+    else {
+      var dx = tgt.x - G.x, dy = tgt.y - G.y, d = Math.hypot(dx,dy);
+      if(d < 3){ G.to = 1 - G.to; G.wait = 0.8; }
+      else {
+        var sp = 62*dt;
+        G.x += dx/d*sp; G.y += dy/d*sp;
+        G.dir = Math.abs(dx) > Math.abs(dy) ? (dx<0?1:2) : (dy<0?3:0);
+      }
+    }
+    // 시야 판정
+    var vx = S.x - G.x, vy = S.y - G.y, dist = Math.hypot(vx,vy);
+    var 봄 = false;
+    if(dist < 168 && 들킴 <= 0 && !busy){
+      var 방향 = [[0,1],[-1,0],[1,0],[0,-1]][G.dir];
+      var 코사인 = (vx*방향[0] + vy*방향[1]) / Math.max(1,dist);
+      if(코사인 > 0.55 && 시야열림(G.x, G.y, S.x, S.y)) 봄 = true;
+    }
+    G.alert = 봄 ? Math.min(1, G.alert + dt*2.4) : Math.max(0, G.alert - dt*1.6);
+    if(G.alert >= 1) 들켰다();
+  }
+  if(들킴 > 0) 들킴 -= dt;
+}
+function 시야열림(x1,y1,x2,y2){          // 벽 너머는 못 본다
+  var n = 14;
+  for(var i=1;i<n;i++){
+    var x = x1 + (x2-x1)*i/n, y = y1 + (y2-y1)*i/n;
+    var c = Math.floor(x/T), r = Math.floor(y/T);
+    if(r<0||c<0||r>=MAPR||c>=MAPC) return false;
+    if(grid[r][c] === '#') return false;
+  }
+  return true;
+}
+function 들켰다(){
+  들킴 = 2.4;
+  for(var i=0;i<guards.length;i++) guards[i].alert = 0;
+  S.x = spawn.x; S.y = spawn.y;
+  cam.x = clamp(S.x - W/2, 0, Math.max(0, MW-W));
+  cam.y = clamp(S.y - H/2, 0, Math.max(0, MH-H));
+  Snd.caught();
+  setTip('순찰 군사에게 들켰어요! 처음 자리로 돌아왔어요. 등불이 없는 곳으로 돌아가 보세요.');
+}
+function drawGuard(G, t){
+  var bx = Math.round(G.x), by = Math.round(G.y) - 4;
+  // 시야
+  var 방향 = [[0,1],[-1,0],[1,0],[0,-1]][G.dir];
+  var ang = Math.atan2(방향[1], 방향[0]);
+  var 위험 = G.alert;
+  g.save();
+  g.globalAlpha = 0.26 + 0.34*위험;
+  var gr = g.createRadialGradient(G.x, G.y, 8, G.x, G.y, 168);
+  gr.addColorStop(0, 위험 > 0.05 ? 'rgba(230,90,70,.85)' : 'rgba(255,224,150,.75)');
+  gr.addColorStop(1, 'rgba(255,224,150,0)');
+  g.fillStyle = gr;
+  g.beginPath(); g.moveTo(G.x, G.y);
+  g.arc(G.x, G.y, 168, ang-0.98, ang+0.98); g.closePath(); g.fill();
+  g.restore();
+
+  g.fillStyle = 'rgba(0,0,0,.26)';
+  g.beginPath(); g.ellipse(bx, G.y+13, 12, 4.5, 0, 0, 6.3); g.fill();
+  var walk = Math.sin(t/120)*3;
+  g.fillStyle = '#2f3a4a'; g.fillRect(bx-8, by+2, 7, 12+walk); g.fillRect(bx+1, by+2, 7, 12-walk);
+  g.fillStyle = '#241f1a'; g.fillRect(bx-8, by+14+walk, 7, 3); g.fillRect(bx+1, by+14-walk, 7, 3);
+  g.fillStyle = '#8c2f28'; g.fillRect(bx-11, by-11, 22, 14);          // 홍색 융복
+  g.fillStyle = '#3a4a6b'; g.fillRect(bx-11, by-4, 22, 3);
+  g.fillStyle = '#f0c9a0'; g.fillRect(bx-9, by-26, 18, 16);
+  g.fillStyle = '#241f1a'; g.fillRect(bx-10, by-29, 20, 8);
+  g.fillRect(bx-5, by-19, 3, 3); g.fillRect(bx+2, by-19, 3, 3);
+  g.fillStyle = '#3b3630';                                            // 전립
+  g.beginPath(); g.ellipse(bx, by-29, 16, 5, 0, 0, 6.3); g.fill();
+  g.fillRect(bx-7, by-39, 14, 10);
+  g.fillStyle = '#c28f2c'; g.fillRect(bx-7, by-31, 14, 3);
+  g.strokeStyle = '#6b4a2a'; g.lineWidth = 3;                          // 창
+  g.beginPath(); g.moveTo(bx+13, by-34); g.lineTo(bx+13, by+12); g.stroke();
+  g.fillStyle = '#b9bec7';
+  g.beginPath(); g.moveTo(bx+13, by-44); g.lineTo(bx+9, by-32); g.lineTo(bx+17, by-32); g.fill();
+  // 이름표 / 경고
+  g.font = 'bold 13px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
+  var nm = '순찰 군사', tw = g.measureText(nm).width, pw = tw+14;
+  g.fillStyle = 위험 > 0.05 ? 'rgba(181,55,46,.90)' : 'rgba(24,20,16,.72)';
+  if(g.roundRect){ g.beginPath(); g.roundRect(bx-pw/2, by-60, pw, 18, 9); g.fill(); }
+  else g.fillRect(bx-pw/2, by-60, pw, 18);
+  g.fillStyle = '#fff'; g.fillText(위험 > 0.05 ? '!  들킬 것 같아요' : nm, bx, by-51);
+}
+
+/* ---- 밀 수 있는 항아리 ---- */
+function 항아리밀기(dx, dy){
+  var fc = Math.floor((S.x + dx*24)/T), fr = Math.floor((S.y + dy*24)/T);
+  if(fr<0||fc<0||fr>=MAPR||fc>=MAPC) return false;
+  if(grid[fr][fc] !== 'o') return false;
+  var tc = fc + (dx>0?1:(dx<0?-1:0)), tr = fr + (dy>0?1:(dy<0?-1:0));
+  if(tr<0||tc<0||tr>=MAPR||tc>=MAPC) return false;
+  if(grid[tr][tc] !== '.') return false;
+  grid[fr][fc] = '.'; grid[tr][tc] = 'o';
+  for(var i=0;i<jars.length;i++) if(jars[i].c===fc && jars[i].r===fr){ jars[i].c=tc; jars[i].r=tr; }
+  Snd.push(); buildStatic();
+  return true;
+}
+function drawJar(x, y){
+  var cx = x + T/2, base = y + T - 8;
+  g.fillStyle = 'rgba(0,0,0,.24)';
+  g.beginPath(); g.ellipse(cx, base+3, 15, 5, 0, 0, 6.3); g.fill();
+  var gj = g.createLinearGradient(cx-14, 0, cx+14, 0);
+  gj.addColorStop(0,'#4b3a2e'); gj.addColorStop(.45,'#7a604a'); gj.addColorStop(1,'#3a2c22');
+  g.fillStyle = gj;
+  g.beginPath(); g.ellipse(cx, base-9, 14, 16, 0, 0, 6.3); g.fill();
+  g.fillStyle = '#2e241c';
+  g.beginPath(); g.ellipse(cx, base-24, 10, 4, 0, 0, 6.3); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.22)';
+  g.beginPath(); g.ellipse(cx-5, base-13, 2.6, 5.5, -0.3, 0, 6.3); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.55)'; g.font = 'bold 12px ' + FONT;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('밀 수 있어요', cx, y - 4);
+}
 
 /* ============================================================
    아바타 — 쓰개와 저고리를 고른다

@@ -118,7 +118,7 @@ for(const 게 of 게임){
     });
     ok('문항 데이터 무결성');
 
-    const 막힌것 = 'TJWSBMFL#n';
+    const 막힌것 = 'TJWSBMFL#nw';  // w(물)은 못 지나간다. o(항아리)는 밀 수 있고 s(군사)는 지나칠 수 있다
     지도.forEach((rows, i) => {
       const 이름 = `제${i+1}마당`;
       const 세로 = rows.length, 가로 = rows[0].length;
