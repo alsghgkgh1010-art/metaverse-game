@@ -751,7 +751,7 @@ var 문제은행 = [
   /* ── 제2마당 · 집현전 ─────────────────────────────── [6사05-01] ── */
   { 마당:2, 유형:'고르기',
     질문:'백성들이 쉽게 읽고 쓸 수 있도록 새 글자를 만든 임금은 누구인가요?',
-    보기:['태조','세종','영조','정조'], 정답:'세종', 강제해설:true,
+    보기:['태조','세종','영조','정조'], 정답:'세종', 강제해설:true, 필수:true,
     힌트:'만 원짜리 지폐에 그려진 임금이에요.',
     해설:'세종이 직접 만들었어요. 이름은 훈민정음, 곧 오늘날의 한글이에요. 집현전 학자들은 이 글자를 설명하는 책을 썼어요.' },
 
@@ -776,7 +776,7 @@ var 문제은행 = [
   /* ── 제3마당 · 한양 사람들 ────────────────────────── [6사05-01] ── */
   { 마당:3, 유형:'고르기',
     질문:'조선에서 신분이 가장 높아 주로 공부를 하고 관리가 되던 사람들은 누구인가요?',
-    보기:['양반','중인','상민','천민'], 정답:'양반', 강제해설:true,
+    보기:['양반','중인','상민','천민'], 정답:'양반', 강제해설:true, 필수:true,
     힌트:'유교 책을 읽고 시험을 준비하던 사람들이에요.',
     해설:'양반은 공부를 해서 관리가 되던 신분이에요. 다만 양반이라고 모두 부자는 아니었어요. 신분은 재산이 아니라 할 수 있는 일과 기회를 정했어요.' },
 
@@ -832,7 +832,7 @@ var 문제은행 = [
 
   { 마당:5, 유형:'OX',
     질문:'거북선은 물속으로 잠수해서 적을 공격했다.',
-    정답:'X', 강제해설:true,
+    정답:'X', 강제해설:true, 필수:true,
     힌트:'지붕을 덮은 배이지, 물속으로 들어가는 배는 아니에요.',
     해설:'거북선은 배 위를 덮개로 덮어 적이 배 위로 뛰어들지 못하게 만든 배예요. 물속으로 들어가지는 못했어요. 그리고 조선 수군이 가장 많이 쓴 배는 판옥선이었어요.' },
 
@@ -850,9 +850,77 @@ var 문제은행 = [
 
   { 마당:5, 유형:'OX',
     질문:'병자호란은 임진왜란보다 먼저 일어난 전쟁이다.',
-    정답:'X', 강제해설:true,
+    정답:'X', 강제해설:true, 필수:true,
     힌트:'임진왜란은 일본이, 병자호란은 청이 쳐들어온 전쟁이에요.',
-    해설:'임진왜란은 1592년, 병자호란은 1636년에 일어났어요. 임진왜란이 먼저예요. 이름의 ‘왜’는 일본, ‘호’는 청을 가리켜요.' }
+    해설:'임진왜란은 1592년, 병자호란은 1636년에 일어났어요. 임진왜란이 먼저예요. 이름의 ‘왜’는 일본, ‘호’는 청을 가리켜요.' },
+
+  /* ── 더 넣은 문제들 (매번 여기서 골라 나옵니다) ─────────────────── */
+
+  { 마당:1, 유형:'OX',
+    질문:'조선이 한양에 처음으로 지은 궁궐은 경복궁이다.',
+    정답:'O',
+    힌트:'‘큰 복을 누리라’는 뜻의 이름이에요.',
+    해설:'한양을 도읍으로 삼으며 가장 먼저 지은 궁궐이 경복궁이에요.' },
+
+  { 마당:1, 유형:'쓰기',
+    질문:'조선의 법을 하나로 모아 놓은 책의 이름은 무엇인가요? (네 글자)',
+    정답:'경국대전', 허용:['경국대전'],
+    힌트:'성종 때 완성된, 나라의 가장 중요한 법책이에요.',
+    해설:'『경국대전』은 조선의 기본 법을 모은 책이에요. 관리를 뽑는 일부터 백성의 생활까지 정해 두었어요.' },
+
+  { 마당:1, 유형:'OX',
+    질문:'조선에서는 시험을 보아 나라의 관리를 뽑기도 했다.',
+    정답:'O',
+    힌트:'공부를 열심히 한 사람에게 기회가 있었어요.',
+    해설:'조선은 과거라는 시험으로 관리를 뽑았어요. 다만 실제로는 공부할 형편이 되는 양반이 대부분이었어요.' },
+
+  { 마당:2, 유형:'쓰기',
+    질문:'세종이 만든 글자의 이름은 무엇인가요? (네 글자)',
+    정답:'훈민정음', 허용:['훈민정음'],
+    힌트:'‘백성을 가르치는 바른 소리’라는 뜻이에요.',
+    해설:'훈민정음은 지금의 한글이에요. 글자를 몰라 억울한 일을 겪던 백성을 위해 만들었어요.' },
+
+  { 마당:2, 유형:'OX',
+    질문:'『농사직설』은 우리나라 땅에 맞는 농사법을 모아 세종 때 펴낸 책이다.',
+    정답:'O',
+    힌트:'나이 든 농부들에게 직접 물어보고 만들었어요.',
+    해설:'그 전에는 땅과 날씨가 다른 중국 농사책을 썼어요. 『농사직설』은 우리 농부들의 경험을 모은 책이에요.' },
+
+  { 마당:3, 유형:'OX',
+    질문:'조선에서는 신분이 태어날 때 정해지고 바꾸기 어려웠다.',
+    정답:'O',
+    힌트:'부모의 신분을 그대로 물려받았어요.',
+    해설:'조선의 신분은 대부분 태어날 때 정해졌어요. 하는 일과 사는 모습도 신분에 따라 달랐어요.' },
+
+  { 마당:3, 유형:'OX',
+    질문:'조선에서 여자는 남자와 똑같이 과거 시험을 볼 수 있었다.',
+    정답:'X',
+    힌트:'유교 질서 속에서 여자에게는 기회가 주어지지 않았어요.',
+    해설:'조선에서 여자는 과거를 볼 수 없었어요. 신사임당처럼 뛰어난 재주를 남긴 사람도 관리가 될 수는 없었어요.' },
+
+  { 마당:4, 유형:'고르기',
+    질문:'조선 후기에 백성들의 생활 모습을 재미있게 그린 그림을 무엇이라고 하나요?',
+    보기:['풍속화','산수화','초상화','벽화'], 정답:'풍속화',
+    힌트:'씨름하는 모습, 서당 모습을 그린 그림이에요.',
+    해설:'풍속화는 그때 사람들이 사는 모습을 그린 그림이에요. 김홍도의 「씨름」, 「서당」이 대표적이에요.' },
+
+  { 마당:4, 유형:'고르기',
+    질문:'탈을 쓰고 춤과 이야기로 양반을 놀리며 즐기던 조선 후기의 놀이는 무엇인가요?',
+    보기:['탈춤','씨름','줄다리기','널뛰기'], 정답:'탈춤',
+    힌트:'얼굴을 가리는 물건을 쓰고 해요.',
+    해설:'탈춤은 탈을 쓰고 춤과 말로 이야기를 꾸미는 놀이예요. 얼굴을 가렸기에 양반을 마음껏 놀릴 수 있었어요.' },
+
+  { 마당:5, 유형:'쓰기',
+    질문:'1592년, 일본이 조선에 쳐들어와 일어난 전쟁의 이름은 무엇인가요? (네 글자)',
+    정답:'임진왜란', 허용:['임진왜란'],
+    힌트:'‘임진년’에 일어난 전쟁이라 붙은 이름이에요.',
+    해설:'1592년 임진년에 일본이 쳐들어와 일어난 전쟁이에요. 7년 가까이 이어졌어요.' },
+
+  { 마당:5, 유형:'고르기',
+    질문:'이순신이 학이 날개를 편 모양으로 배를 늘어놓아 크게 이긴 싸움은 무엇인가요?',
+    보기:['한산도 대첩','귀주 대첩','살수 대첩','행주 대첩'], 정답:'한산도 대첩',
+    힌트:'학익진이라는 방법을 쓴 싸움이에요.',
+    해설:'한산도 대첩에서 이순신은 학이 날개를 편 모양으로 배를 벌려 일본 수군을 크게 무찔렀어요.' },
 ];
 
 /* 마당 지도
@@ -1058,16 +1126,44 @@ function newState(nick){
     x: 0, y: 0, dir: 0,
     answered: [],          // 문항별 {done, right, usedHint, tries, given}
     엽전: 0, 모은유물: {}, 먹은엽전: {}, 연속: 0,
+    뽑음: 문항뽑기(),
     score: 0,
     startAt: Date.now(),
     elapsed: 0,
     retryMode: false
   };
 }
-function qOfMap(m){                    // m: 0-based
-  var out = [];
-  for(var i=0;i<문제은행.length;i++) if(문제은행[i].마당 === m+1) out.push(i);
-  return out;
+/* 지도에 놓인 족자 수만큼만 문제를 뽑는다.
+   문항이 족자보다 많으므로 할 때마다 다른 문제가 나온다. */
+function 족자수(m){
+  var n = 0, rows = 지도[m];
+  for(var r=0;r<rows.length;r++)
+    for(var c=0;c<rows[r].length;c++) if(rows[r].charAt(c) === 'Q') n++;
+  return n;
+}
+function 문항뽑기(){
+  var 뽑음 = [];
+  for(var m=0;m<지도.length;m++){
+    var 후보 = [], 필수 = [];
+    for(var i=0;i<문제은행.length;i++){
+      if(문제은행[i].마당 !== m+1) continue;
+      (문제은행[i].필수 ? 필수 : 후보).push(i);
+    }
+    for(var k=후보.length-1;k>0;k--){
+      var j2 = Math.floor(Math.random()*(k+1)), tmp = 후보[k]; 후보[k] = 후보[j2]; 후보[j2] = tmp;
+    }
+    var need = 족자수(m);
+    var 고름 = 필수.concat(후보).slice(0, need);
+    고름.sort(function(a,b){ return a-b; });
+    뽑음.push(고름);
+  }
+  return 뽑음;
+}
+function qOfMap(m){ return (S && S.뽑음) ? S.뽑음[m] : []; }
+function 전체문항수(){
+  if(!S || !S.뽑음) return 0;
+  var n = 0; for(var i=0;i<S.뽑음.length;i++) n += S.뽑음[i].length;
+  return n;
 }
 function mapCleared(m){
   var list = qOfMap(m);
@@ -1078,7 +1174,9 @@ function mapCleared(m){
   return true;
 }
 function totalDone(){
-  var n=0; for(var i=0;i<문제은행.length;i++) if(S.answered[i] && S.answered[i].done) n++;
+  var n = 0, all = (S && S.뽑음) ? S.뽑음 : [];
+  for(var m=0;m<all.length;m++)
+    for(var k=0;k<all[m].length;k++){ var a = S.answered[all[m][k]]; if(a && a.done) n++; }
   return n;
 }
 
@@ -1825,7 +1923,7 @@ function loop(t){
     vx += padVec.x; vy += padVec.y;
     var len = Math.hypot(vx,vy);
     if(len > 1){ vx/=len; vy/=len; }
-    moving = (Math.abs(vx)+Math.abs(vy)) > 0.05;
+    moving = (Math.abs(vx)+Math.abs(vy)) > 0.05 && 멈춤남음 <= 0;
 
     if(moving){
       if(Math.abs(vx) > Math.abs(vy)) S.dir = vx < 0 ? 1 : 2;
@@ -1843,6 +1941,7 @@ function loop(t){
       checkTiles();
     }
     군사갱신(dt);
+    if(멈춤남음 > 0) 멈춤남음 -= dt;
     S.elapsed = (Date.now() - S.startAt)/1000;
     $('chipTime').textContent = '⏱ ' + fmtTime(S.elapsed);
   }
@@ -1923,7 +2022,7 @@ function openQuiz(idx){
 
   $('qWhere').textContent = '제' + q.마당 + '마당 · ' + 마당[q.마당-1].이름;
   $('qType').textContent = q.유형;
-  $('qNo').textContent = (totalDone()+1) + ' / ' + 문제은행.length;
+  $('qNo').textContent = (totalDone()+1) + ' / ' + 전체문항수();
   $('qText').textContent = q.질문;
 
   var area = $('qAnswerArea'); area.innerHTML = '';
@@ -2061,7 +2160,7 @@ function closeQuiz(){
 
 /* ---------- HUD / 저장 ---------- */
 function updateHud(){
-  $('chipProg').textContent = '📜 ' + totalDone() + ' / ' + 문제은행.length;
+  $('chipProg').textContent = '📜 ' + totalDone() + ' / ' + 전체문항수();
   $('chipCoin').textContent = '🪙 ' + (S.엽전 || 0);
   $('chipScore').textContent = '⭐ ' + S.score + '점';
   $('btnJump').style.display = 설정.진행방식 === 'free' ? '' : 'none';
@@ -2071,7 +2170,7 @@ function save(){
   try{
     store.set('save', JSON.stringify({
       nick:S.nick, map:S.map, answered:S.answered, score:S.score,
-      엽전:S.엽전, 모은유물:S.모은유물, 먹은엽전:S.먹은엽전,
+      엽전:S.엽전, 모은유물:S.모은유물, 먹은엽전:S.먹은엽전, 뽑음:S.뽑음,
       elapsed:(Date.now()-S.startAt)/1000, cfg:설정
     }));
   }catch(e){}
@@ -2079,9 +2178,9 @@ function save(){
 
 /* ---------- 결과 ---------- */
 function finish(){
-  var right = 0, wrong = 0;
-  for(var i=0;i<문제은행.length;i++){
-    var a = S.answered[i];
+  var right = 0, wrong = 0, all = (S && S.뽑음) ? S.뽑음 : [];
+  for(var m=0;m<all.length;m++) for(var k=0;k<all[m].length;k++){
+    var a = S.answered[all[m][k]];
     if(a && a.done){ if(a.right) right++; else wrong++; }
   }
   var sec = Math.floor(S.elapsed);
@@ -2171,6 +2270,7 @@ $('btnResume').onclick = function(){
     S.answered = d.answered || [];
     S.score = d.score || 0;
     S.엽전 = d.엽전 || 0; S.모은유물 = d.모은유물 || {}; S.먹은엽전 = d.먹은엽전 || {};
+    if(d.뽑음 && d.뽑음.length === 지도.length) S.뽑음 = d.뽑음;
     S.startAt = Date.now() - (d.elapsed||0)*1000;
     if(d.cfg){ 설정.오답허용 = d.cfg.오답허용; 설정.진행방식 = d.cfg.진행방식; syncTeacherUI(); }
     loadMap(Math.min(d.map||0, 지도.length-1));
@@ -2356,7 +2456,7 @@ $('itFreeze').onclick = function(){
 $('btnCheck').onclick = onCheck;
 $('btnNext').onclick = function(){
   closeQuiz();
-  if(totalDone() >= 문제은행.length){
+  if(totalDone() >= 전체문항수()){
     // 마지막 문제를 풀면 곧바로 마무리
     setTimeout(finish, 260);
   }
@@ -2718,14 +2818,13 @@ function 시야열림(x1,y1,x2,y2){          // 벽 너머는 못 본다
   }
   return true;
 }
+var 멈춤남음 = 0;
 function 들켰다(){
-  들킴 = 2.4;
+  들킴 = 3.2;                                  // 이 동안은 다시 잡히지 않는다
+  멈춤남음 = 2.2;                              // 잠깐 붙잡혀 있을 뿐, 처음으로 돌려보내지 않는다
   for(var i=0;i<guards.length;i++) guards[i].alert = 0;
-  S.x = spawn.x; S.y = spawn.y;
-  cam.x = clamp(S.x - W/2, 0, Math.max(0, MW-W));
-  cam.y = clamp(S.y - H/2, 0, Math.max(0, MH-H));
   Snd.caught();
-  setTip('순찰 군사에게 들켰어요! 처음 자리로 돌아왔어요. 등불이 없는 곳으로 돌아가 보세요.');
+  setTip('순찰 군사에게 붙잡혔어요! 잠시 뒤에 다시 움직일 수 있어요.');
 }
 function drawGuard(G, t){
   var bx = Math.round(G.x), by = Math.round(G.y) - 4;
