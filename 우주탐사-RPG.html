@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>우주 탐사대 — 지구 훈련장</title>
+<title>우주 탐사대</title>
 
 <!-- ===== three.js r147 (수정 금지) =====
      배포할 때 이 줄을 라이브러리 소스로 통째로 바꿔 단일 파일로 만든다.
@@ -27,6 +27,7 @@
 @media (prefers-reduced-motion: reduce){ :root{ --dur:1ms; } }
 
 *{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
 html,body{ height:100%; margin:0; overflow:hidden; background:#0b0d12; }
 body{ font-family:var(--f-sans); font-size:var(--fs-body); color:var(--ink);
       -webkit-text-size-adjust:100%; }
@@ -43,32 +44,71 @@ button{ font:inherit; color:inherit; }
   box-shadow:0 3px 0 var(--dan-red-d); color:#fff; }
 .btn-lg{ min-height:62px; font-size:var(--fs-lead); padding:0 var(--s6); }
 
-/* ---- 시작 화면 ---- */
-#intro{ position:fixed; inset:0; z-index:40; display:grid; place-items:center;
-  padding:var(--s5); background:radial-gradient(120% 90% at 50% 10%,#1b2740,#080a10 70%); }
-.icard{ width:min(720px,100%); background:var(--paper); border:3px solid var(--ink);
-  border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
-.ihead{ padding:var(--s7) var(--s6) var(--s5); text-align:center;
-  background:linear-gradient(180deg,#fbf7ec,#efe6d2); border-bottom:3px solid var(--ink); }
-.eyebrow{ margin:0 0 var(--s3); font-size:15px; letter-spacing:.22em; font-weight:800; color:var(--ink-soft); }
-h1{ margin:0; font-size:var(--fs-title); line-height:1.12; letter-spacing:-.02em; }
-h1 small{ display:block; font-size:.40em; font-weight:700; color:var(--dan-red); margin-top:var(--s3); }
-.ibody{ padding:var(--s6); display:grid; gap:var(--s5); }
-.modes{ display:grid; gap:var(--s3); }
-.mode{ display:flex; align-items:center; gap:var(--s3); width:100%; min-height:var(--tap);
-  padding:var(--s3) var(--s4); text-align:left; border:2px solid var(--ink);
-  border-radius:var(--radius-s); background:#fff; cursor:pointer; font-weight:700; }
-.mode[aria-pressed="true"]{ background:var(--dan-gold); border-width:3px; }
-.mode .dot{ flex:0 0 auto; font-size:22px; }
-.mode small{ display:block; font-weight:600; font-size:16px; color:var(--ink-soft); }
-.howto{ background:var(--paper-2); border:2px dashed var(--line); border-radius:var(--radius-s);
-  padding:var(--s4) var(--s5); }
-.howto h2{ margin:0 0 var(--s3); font-size:var(--fs-lead); }
-.howto ul{ margin:0; padding-left:1.15em; } .howto li{ margin:var(--s1) 0; }
+/* ---- 시작(타이틀) 화면 ----
+   배경은 그림 파일이 아니라 실제 3D 장면이다. 달 표면에 선 우주비행사 뒤로
+   별과 지구가 떠 있고, 그 위에 어두운 그라디언트를 덮어 글자를 읽히게 한다. */
+#intro{ position:fixed; inset:0; z-index:40; display:flex; align-items:center;
+  padding:clamp(18px,4vw,60px); overflow:auto;
+  background:linear-gradient(100deg, rgba(3,5,12,.95) 0%, rgba(3,5,12,.90) 34%,
+             rgba(3,5,12,.55) 58%, rgba(3,5,12,.10) 82%, rgba(3,5,12,0) 100%); }
+.icol{ width:min(560px,100%); min-width:0; display:grid; gap:clamp(14px,2vw,22px); word-break:keep-all; }
+.eyebrow{ margin:0; font-size:16px; letter-spacing:.30em; font-weight:800; color:#8fd0ff;
+  text-transform:none; }
+h1{ margin:0; font-size:clamp(40px,7.6vw,96px); line-height:1.05; letter-spacing:.06em; white-space:nowrap;
+  font-weight:900; color:#fff;
+  text-shadow:0 0 24px rgba(120,180,255,.85), 0 0 68px rgba(50,110,220,.6), 0 3px 0 rgba(0,0,0,.5); }
+.tagline{ margin:0; font-size:clamp(19px,2.3vw,23px); font-weight:700; color:#d7e6ff;
+  text-shadow:0 2px 8px rgba(0,0,0,.8); line-height:1.5; }
+.tagline b{ color:#ffd76a; }
+
+.modes{ display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); }
+.mode{ display:block; min-height:var(--tap); padding:var(--s3) var(--s4); text-align:left;
+  border:2px solid rgba(150,190,255,.38); border-radius:14px; cursor:pointer;
+  background:rgba(16,26,48,.72); color:#eaf2ff; font-weight:800; font-size:17px; line-height:1.35;
+  transition:transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
+.mode:hover{ transform:translateY(-2px); }
+.mode .dot{ font-size:22px; margin-right:6px; }
+.mode small{ display:block; font-weight:600; font-size:15px; color:#a9c0e0; margin-top:3px; line-height:1.4; }
+.mode[aria-pressed="true"]{ background:rgba(43,97,120,.92); border-color:#ffd76a; border-width:3px;
+  box-shadow:0 0 0 3px rgba(255,215,106,.22), 0 0 26px rgba(255,215,106,.35); color:#fff; }
+.mode[aria-pressed="true"] small{ color:#ffeec2; }
+.mode[aria-pressed="true"] .dot::after{ content:" ✓"; color:#ffd76a; }
+
+#btnGo{ width:100%; min-height:74px; font-size:clamp(22px,2.6vw,28px); font-weight:900;
+  letter-spacing:.06em; color:#fff; border:3px solid #ffd76a; border-radius:16px;
+  background:linear-gradient(180deg,#c9482f,#8c261f); cursor:pointer;
+  box-shadow:0 5px 0 #6b1a15, 0 0 34px rgba(255,140,80,.45);
+  transition:transform var(--dur) var(--ease); }
+#btnGo:active{ transform:translateY(4px); box-shadow:0 1px 0 #6b1a15; }
+
+.ifoot{ display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); }
+.linkbtn{ min-height:44px; padding:0 var(--s4); border:2px solid rgba(150,190,255,.42);
+  border-radius:999px; background:rgba(10,16,32,.6); color:#cfe0f5; font-size:17px;
+  font-weight:700; cursor:pointer; }
+details.howto{ border:2px solid rgba(150,190,255,.30); border-radius:12px;
+  background:rgba(8,13,26,.62); color:#dbe8fa; padding:0; }
+details.howto > summary{ list-style:none; cursor:pointer; min-height:44px; display:flex;
+  align-items:center; padding:0 var(--s4); font-size:17px; font-weight:800; color:#cfe0f5; }
+details.howto > summary::-webkit-details-marker{ display:none; }
+details.howto > summary::before{ content:"▸ "; margin-right:6px; color:#8fd0ff; }
+details.howto[open] > summary::before{ content:"▾ "; }
+details.howto ul{ margin:0; padding:0 var(--s5) var(--s4) 2.2em; font-size:17px; }
+details.howto li{ margin:4px 0; }
 kbd{ display:inline-block; min-width:2em; padding:2px 8px; margin:0 2px; border:2px solid var(--ink);
-  border-bottom-width:3px; border-radius:6px; background:#fff; font-family:inherit; font-size:.9em; font-weight:800; }
-.foot{ padding:0 var(--s6) var(--s6); font-size:15px; color:var(--ink-soft); text-align:center; }
-#loadNote{ margin-top:var(--s3); font-weight:800; color:var(--dan-red); }
+  border-bottom-width:3px; border-radius:6px; background:#fff; color:var(--ink);
+  font-family:inherit; font-size:.9em; font-weight:800; }
+#loadNote{ margin:0; font-weight:800; color:#ffb3a7; font-size:18px; }
+@media (max-width:520px){
+  .modes{ grid-template-columns:1fr; }
+  h1{ font-size:clamp(36px,11vw,60px); }
+  .eyebrow{ font-size:14px; letter-spacing:.14em; }
+  .tagline{ font-size:18px; }
+}
+@media (max-width:760px){
+  #intro{ align-items:flex-end; padding-bottom:24px;
+    background:linear-gradient(180deg, rgba(3,5,12,.15) 0%, rgba(3,5,12,.72) 42%, rgba(3,5,12,.96) 72%); }
+  .icol{ width:100%; }
+}
 
 /* ---- 게임 UI ---- */
 .ui{ position:fixed; z-index:20; pointer-events:none; }
@@ -93,13 +133,13 @@ kbd{ display:inline-block; min-width:2em; padding:2px 8px; margin:0 2px; border:
 #stick{ position:fixed; z-index:22; width:180px; height:180px; border-radius:50%;
   border:3px solid rgba(255,255,255,.5); background:rgba(20,28,44,.30); display:none;
   left:24px; bottom:24px; touch-action:none; }
-#stick.on{ display:block; }
+body.playing #stick.on{ display:block; }
 #knob{ position:absolute; left:50%; top:50%; width:84px; height:84px; margin:-42px 0 0 -42px;
   border-radius:50%; background:rgba(43,97,120,.92); border:3px solid #fff; pointer-events:none; }
 #btnJumpTouch{ position:fixed; z-index:22; right:26px; bottom:30px; width:96px; height:96px;
   border-radius:50%; border:3px solid #fff; background:rgba(181,55,46,.88); color:#fff;
   font-weight:800; font-size:18px; display:none; touch-action:none; }
-#btnJumpTouch.on{ display:block; }
+body.playing #btnJumpTouch.on{ display:block; }
 
 /* 오버레이 */
 .overlay{ position:fixed; inset:0; z-index:50; display:none; align-items:center;
@@ -128,52 +168,129 @@ input[type=range]{ flex:1 1 160px; min-width:140px; height:44px; }
   text-align:center; pointer-events:none; }
 #record.on{ opacity:1; transform:translate(-50%,0); }
 #record small{ display:block; font-size:15px; font-weight:700; color:#e6d6a8; margin-top:2px; }
+
+/* ---- 임무·수집 UI ---- */
+#taskBar .step{ display:block; font-size:15px; font-weight:800; color:var(--dan-blue);
+  letter-spacing:.06em; margin-bottom:2px; }
+
+/* 길 안내 화살표 (목표가 화면 밖일 때) */
+#guide{ position:fixed; z-index:23; pointer-events:none; transform:translate(-50%,-50%);
+  display:none; text-align:center; }
+#guide.on{ display:block; }
+#guideArrow{ display:block; font-size:46px; line-height:1; color:#ffd76a;
+  text-shadow:0 0 6px rgba(28,26,23,.9), 0 2px 0 rgba(28,26,23,.9); }
+#guideDist{ display:inline-block; margin-top:2px; padding:3px 10px; border-radius:999px;
+  background:rgba(28,26,23,.82); color:#fff; font-size:17px; font-weight:800; white-space:nowrap; }
+
+/* 수집 현황 */
+#collect{ right:14px; top:74px; text-align:right; font-size:17px; font-weight:800; line-height:1.6; }
+#collect .row{ white-space:nowrap; }
+#collect .k{ color:var(--ink-soft); font-weight:700; }
+
+/* 표본 안내 카드 */
+#pickup{ position:fixed; z-index:26; left:50%; bottom:120px; transform:translate(-50%,12px);
+  opacity:0; transition:opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  width:min(560px,92vw); background:var(--paper); border:3px solid var(--ink);
+  border-radius:var(--radius); box-shadow:var(--shadow); padding:var(--s4) var(--s5);
+  pointer-events:none; }
+#pickup.on{ opacity:1; transform:translate(-50%,0); }
+#pickup h3{ margin:0 0 var(--s2); font-size:22px; }
+#pickup p{ margin:0; font-size:18px; color:var(--ink-soft); font-weight:700; }
+#pickup .tag{ display:inline-block; font-size:15px; font-weight:800; color:#fff;
+  background:var(--dan-blue); border-radius:999px; padding:2px 10px; margin-bottom:var(--s2); }
+
+/* 촬영 조준 */
+#aim{ position:fixed; z-index:23; inset:0; display:none; pointer-events:none; }
+#aim.on{ display:block; }
+#aimRing{ position:absolute; left:50%; top:50%; width:220px; height:220px; margin:-110px 0 0 -110px;
+  border:4px dashed rgba(255,255,255,.75); border-radius:50%; }
+#aimRing.hit{ border-style:solid; border-color:#ffd76a; }
+#aimMsg{ position:absolute; left:50%; top:calc(50% + 130px); transform:translateX(-50%);
+  background:rgba(28,26,23,.82); color:#fff; padding:6px 16px; border-radius:999px;
+  font-size:18px; font-weight:800; white-space:nowrap; }
+#btnShot{ position:fixed; z-index:24; left:50%; bottom:96px; transform:translateX(-50%);
+  display:none; min-height:56px; padding:0 var(--s6); border:3px solid var(--ink);
+  border-radius:999px; background:var(--dan-gold); font-size:20px; font-weight:800;
+  cursor:pointer; box-shadow:var(--shadow); }
+#btnShot.on{ display:inline-flex; align-items:center; gap:var(--s2); }
+
+/* 천체 고르기 */
+.bodylist{ display:grid; gap:var(--s3); }
+.bodybtn{ display:flex; align-items:center; gap:var(--s3); width:100%; min-height:64px;
+  padding:var(--s3) var(--s4); text-align:left; border:2px solid var(--ink);
+  border-radius:var(--radius-s); background:#fff; cursor:pointer; font-weight:800; font-size:19px; }
+.bodybtn small{ display:block; font-weight:700; font-size:16px; color:var(--ink-soft); }
+.bodybtn[disabled]{ background:var(--paper-3); color:var(--ink-soft); cursor:not-allowed; opacity:.75; }
+.bodybtn[aria-current="true"]{ background:var(--dan-gold); border-width:3px; }
+.bodybtn .dot{ font-size:26px; flex:0 0 auto; }
+
+/* 보고서 */
+#report .sheet{ width:min(880px,100%); }
+.rep h3{ margin:var(--s5) 0 var(--s3); font-size:22px; border-bottom:2px solid var(--line); padding-bottom:4px; }
+.rep h3:first-child{ margin-top:0; }
+.rep table{ width:100%; border-collapse:collapse; font-size:18px; }
+.rep th,.rep td{ border:2px solid var(--line); padding:6px 10px; text-align:left; }
+.rep th{ background:var(--paper-2); }
+.rep ul{ margin:0; padding-left:1.2em; font-size:18px; }
+.rep li{ margin:var(--s1) 0; }
+.shots{ display:flex; flex-wrap:wrap; gap:var(--s3); }
+.shots figure{ margin:0; width:200px; }
+.shots img{ width:100%; border:2px solid var(--ink); border-radius:8px; display:block; background:#000; }
+.shots figcaption{ font-size:16px; font-weight:700; margin-top:4px; }
+.bigstat{ display:flex; flex-wrap:wrap; gap:var(--s3); }
+.bigstat div{ flex:1 1 140px; border:2px solid var(--line); border-radius:var(--radius-s);
+  background:var(--paper-2); padding:var(--s3); text-align:center; }
+.bigstat b{ display:block; font-size:30px; color:var(--dan-red); }
+.bigstat span{ font-size:16px; font-weight:700; color:var(--ink-soft); }
+
+@media print{
+  html,body{ overflow:visible; height:auto; background:#fff; }
+  canvas#gl, .ui, #stick, #btnJumpTouch, #btnShot, #guide, #aim, #record, #pickup{ display:none !important; }
+  #report{ position:static; display:block !important; background:#fff; padding:0; }
+  #report .sheet{ width:100%; max-height:none; border:0; box-shadow:none; }
+  #report .sheet-actions{ display:none; }
+  .rep table{ page-break-inside:avoid; }
+}
 </style>
 
 <canvas id="gl"></canvas>
 
-<!-- 시작 화면 -->
+<!-- 시작(타이틀) 화면 — 배경은 뒤에서 실제로 돌아가는 3D 장면이다 -->
 <div id="intro">
-  <div class="icard">
-    <div class="ihead">
-      <p class="eyebrow">초등 과학 5~6학년 · 지구의 운동</p>
-      <h1>우주 탐사대<small>먼저 지구 훈련장에서 몸을 풀어요</small></h1>
+  <div class="icol">
+    <p class="eyebrow">초등 과학 5~6학년 · 태양계와 별</p>
+    <h1>우주 탐사대</h1>
+    <p class="tagline">달·화성·유로파를 밟고 <b>암석 표본</b>을 모으세요.<br>
+      천체마다 <b>끌어당기는 힘</b>이 달라서, 같은 힘으로 뛰어도 높이가 달라요.</p>
+
+    <div class="modes" id="modes">
+      <button class="mode" data-mode="easy" aria-pressed="true">
+        <span class="dot">🟢</span>처음이에요
+        <small>3D 게임은 처음 · 방향키만으로</small>
+      </button>
+      <button class="mode" data-mode="normal" aria-pressed="false">
+        <span class="dot">🟡</span>해 봤어요
+        <small>조금 해 봤어요 · 방향키+마우스</small>
+      </button>
+      <button class="mode" data-mode="free" aria-pressed="false">
+        <span class="dot">🔴</span>익숙해요
+        <small>게임에 익숙해요 · WASD+마우스</small>
+      </button>
     </div>
-    <div class="ibody">
-      <div>
-        <p style="margin:0 0 var(--s3); font-weight:800">조작이 어떤가요?</p>
-        <div class="modes" id="modes">
-          <button class="mode" data-mode="easy" aria-pressed="true">
-            <span class="dot">🟢</span>
-            <span>3D 게임은 처음이에요
-              <small>방향키만으로 다 할 수 있어요. 마우스로 둘러봐도 돼요.</small></span>
-          </button>
-          <button class="mode" data-mode="normal" aria-pressed="false">
-            <span class="dot">🟡</span>
-            <span>조금 해 봤어요
-              <small>방향키로 움직이고, 마우스로 둘러볼 수 있어요.</small></span>
-          </button>
-          <button class="mode" data-mode="free" aria-pressed="false">
-            <span class="dot">🔴</span>
-            <span>게임에 익숙해요
-              <small>WASD와 마우스로 자유롭게 움직여요.</small></span>
-          </button>
-        </div>
-      </div>
-      <div class="howto">
-        <h2>이렇게 움직여요</h2>
-        <ul>
-          <li><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 걷기</li>
-          <li><kbd>Shift</kbd> 를 누른 채 걸으면 달려요</li>
-          <li><kbd>Space</kbd> 로 점프해요</li>
-          <li>마우스를 <b>끌면</b> 둘러볼 수 있어요</li>
-          <li>막히면 <kbd>R</kbd> 을 눌러 처음 자리로 돌아와요</li>
-        </ul>
-      </div>
-      <button class="btn btn-primary btn-lg" id="btnGo">훈련장으로 가기</button>
-      <p id="loadNote"></p>
-    </div>
-    <p class="foot">인터넷 없이 이 파일 하나로 돌아갑니다</p>
+
+    <button id="btnGo">🚀 탐사 시작</button>
+
+    <details class="howto">
+      <summary>조작법 보기</summary>
+      <ul>
+        <li><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 걷기</li>
+        <li><kbd>Shift</kbd> 를 누른 채 걸으면 달려요</li>
+        <li><kbd>Space</kbd> 로 점프해요</li>
+        <li>마우스를 <b>끌면</b> 둘러볼 수 있어요</li>
+        <li>막히면 <kbd>R</kbd> 을 눌러 처음 자리로 돌아와요</li>
+      </ul>
+    </details>
+    <p id="loadNote"></p>
   </div>
 </div>
 
@@ -189,14 +306,24 @@ input[type=range]{ flex:1 1 160px; min-width:140px; height:44px; }
 </div>
 <div class="ui" id="topRight" hidden>
   <button class="icon-btn" id="btnZoom" title="관측하기 (Z)" aria-pressed="false">🔭</button>
-  <button class="icon-btn" id="btnGrav" title="다른 천체의 힘으로 바꾸기">🌗</button>
+  <button class="icon-btn" id="btnGrav" title="다른 천체로 이동하기">🌗</button>
+  <button class="icon-btn" id="btnReport" title="탐사 보고서">🗒️</button>
   <button class="icon-btn" id="btnSettings" title="설정">⚙️</button>
   <button class="icon-btn" id="btnHelp2" title="도움말">❓</button>
 </div>
 <div class="ui panel" id="taskBar" hidden>
+  <span class="step" id="taskStep">임무 1 / 13</span>
   <span id="taskText">빛나는 원까지 걸어가 보세요.</span>
   <span class="sub" id="taskSub">방향키로 움직여요</span>
 </div>
+<div class="ui panel" id="collect" hidden>
+  <div class="row"><span class="k">표본</span> <span id="uiSamples">0 / 9</span></div>
+  <div class="row"><span class="k">사진</span> <span id="uiPhotos">0 / 2</span></div>
+</div>
+<div id="guide"><span id="guideArrow">➤</span><br><span id="guideDist"></span></div>
+<div id="pickup"><span class="tag" id="pkTag">표본</span><h3 id="pkName"></h3><p id="pkDesc"></p></div>
+<div id="aim"><div id="aimRing"></div><div id="aimMsg"></div></div>
+<button id="btnShot">📷 사진 찍기</button>
 <div class="ui" id="fps" hidden>—</div>
 <div id="record"><span id="recMain"></span><small id="recSub"></small></div>
 <div class="ui panel" id="zoomHint" hidden
@@ -254,10 +381,37 @@ input[type=range]{ flex:1 1 160px; min-width:140px; height:44px; }
         <li><kbd>Space</kbd> 로 점프해요. 살짝 누르면 조금만, 꾹 누르면 높이 뛰어요.</li>
         <li>마우스를 끌면 둘러볼 수 있어요. 손을 떼면 카메라가 저절로 뒤로 돌아와요.</li>
         <li>막히면 <kbd>R</kbd> 을 눌러 처음 자리로 돌아와요.</li>
-        <li>🌗 단추를 누르면 <b>달의 힘</b>으로 바꿔 볼 수 있어요.</li>
+        <li>🌗 단추로 <b>다른 천체</b>로 이동해요. 임무를 마치면 새 천체가 열려요.</li>
+        <li>🔭 단추로 <b>멀리 있는 것을 크게</b> 볼 수 있어요. 사진도 찍어요.</li>
+        <li>🗒️ 단추로 지금까지의 <b>탐사 보고서</b>를 봐요.</li>
       </ul>
     </div>
     <div class="sheet-actions"><button class="btn btn-primary" style="flex:1" id="btnCloseHelp2">닫기</button></div>
+  </div>
+</div>
+
+<!-- 천체 고르기 -->
+<div class="overlay" id="bodyPick">
+  <div class="sheet">
+    <div class="sheet-head">어디로 갈까요?</div>
+    <div class="sheet-body">
+      <div class="bodylist" id="bodyList"></div>
+      <p style="font-size:17px;color:var(--ink-soft);margin:var(--s4) 0 0">
+        임무를 마치면 다음 천체가 열려요. 어느 곳이든 <b>끌어당기는 힘</b>이 있어요 — 세기가 다를 뿐이에요.</p>
+    </div>
+    <div class="sheet-actions"><button class="btn btn-primary" style="flex:1" id="btnCloseBody">닫기</button></div>
+  </div>
+</div>
+
+<!-- 탐사 보고서 -->
+<div class="overlay" id="report">
+  <div class="sheet">
+    <div class="sheet-head">🚀 탐사 보고서</div>
+    <div class="sheet-body rep" id="repBody"></div>
+    <div class="sheet-actions">
+      <button class="btn" id="btnPrint">🖨️ 인쇄하기</button>
+      <button class="btn btn-primary" style="flex:1" id="btnCloseRep">계속 둘러보기</button>
+    </div>
   </div>
 </div>
 
@@ -298,6 +452,28 @@ var BODIES = {
 };
 var bodyKey = 'earth';
 function G(){ return BODIES[bodyKey].g; }
+
+/* ===== 여기만 고치면 다른 내용으로 바꿀 수 있습니다 (표본 도감) =====
+   천체마다 3개. name = 표본 이름, desc = 초등 5~6학년 어휘의 한 줄 설명.
+   pos = [x, z] (지형 높이는 자동으로 맞춰집니다) */
+var SAMPLES = {
+  moon: [
+    { name:'현무암',   desc:'옛날에 흘러나온 용암이 굳어서 생긴 검은 돌이에요.', pos:[-6,-38] },
+    { name:'각력암',   desc:'돌조각들이 부딪쳐 깨졌다가 다시 뭉쳐 굳은 돌이에요.', pos:[34,20] },
+    { name:'달 먼지',  desc:'달 표면을 덮은 아주 고운 돌가루예요. 모서리가 뾰족해요.', pos:[-42,26] }
+  ],
+  mars: [
+    { name:'붉은 사암',  desc:'고운 모래가 눌려 굳은 돌이에요. 층이 줄무늬처럼 보여요.', pos:[26,-34] },
+    { name:'적철석',     desc:'철이 산소와 만나 붉게 변한 돌이에요. 화성이 붉은 까닭이에요.', pos:[-36,-14] },
+    { name:'화산암',     desc:'화산에서 나온 마그마가 식어서 굳은 돌이에요.', pos:[16,42] }
+  ],
+  europa: [
+    { name:'얼음 결정',      desc:'유로파 표면은 두꺼운 얼음으로 덮여 있어요.', pos:[-26,32] },
+    { name:'소금 알갱이',    desc:'얼음 아래 바닷물에서 올라온 소금으로 보여요.', pos:[38,6] },
+    { name:'붉은 줄무늬 물질', desc:'갈라진 틈을 따라 붉게 보이는 물질이에요. 무엇인지 연구 중이에요.', pos:[-38,-34] }
+  ]
+};
+/* ===== 여기까지 ===== */
 
 /* ---------- 설정 상태 ---------- */
 var opt = { mode:'easy', sens:1.0, shake:true, qual:'auto' };
@@ -769,20 +945,36 @@ function buildProps(){
     dummy.updateMatrix(); inst.setMatrixAt(n++, dummy.matrix);
   }
   inst.count = n; props.add(inst);
-
-  // 목표 고리
-  goalPos.set(14, 0, 10);
-  goalRing = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.10, 8, 28),
-    new THREE.MeshBasicMaterial({ color:0xffd76a, transparent:true, opacity:0.9, fog:false }));
-  goalRing.rotation.x = Math.PI/2;
-  goalRing.position.set(goalPos.x, sampleH(goalPos.x, goalPos.z)+1.0, goalPos.z);
-  props.add(goalRing);
-  var beam = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 22, 12, 1, true),
-    new THREE.MeshBasicMaterial({ color:0xffd76a, transparent:true, opacity:0.10,
-      side:THREE.DoubleSide, depthWrite:false, fog:false }));
-  beam.position.set(goalPos.x, sampleH(goalPos.x, goalPos.z)+11, goalPos.z);
-  props.add(beam);
 }
+
+/* ---------- 목표 표시 (빛나는 고리 + 하늘로 뻗는 빛기둥) ---------- */
+/* props 와 달리 천체를 바꿔도 살아남는다. 위치만 옮겨 쓴다. */
+var waypoint = (function(){
+  var g = new THREE.Group();
+  goalRing = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.12, 8, 30),
+    new THREE.MeshBasicMaterial({ color:0xffd76a, transparent:true, opacity:0.95, fog:false }));
+  goalRing.rotation.x = Math.PI/2;
+  goalRing.position.y = 1.0;
+  g.add(goalRing);
+  var beam = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 60, 14, 1, true),
+    new THREE.MeshBasicMaterial({ color:0xffd76a, transparent:true, opacity:0.20,
+      side:THREE.DoubleSide, depthWrite:false, fog:false,
+      blending:THREE.AdditiveBlending }));
+  beam.position.y = 30;
+  g.add(beam);
+  g.visible = false;
+  scene.add(g);
+  return g;
+})();
+var wp = { on:false, x:0, z:0 };
+function setWaypoint(x, z){
+  wp.on = true; wp.x = x; wp.z = z;
+  goalPos.set(x, 0, z);
+  waypoint.visible = true;
+  waypoint.position.set(x, sampleH(x, z), z);
+}
+function clearWaypoint(){ wp.on = false; waypoint.visible = false; }
+function refreshWaypoint(){ if(wp.on) waypoint.position.set(wp.x, sampleH(wp.x, wp.z), wp.z); }
 
 /* ---------- 캐릭터 (골격 스키닝) ---------- */
 /* 뼈 19개를 코드로 만들고, 캡슐을 병합해 하나의 SkinnedMesh로 만든다.
@@ -1199,32 +1391,408 @@ function respawn(){
   P.pos.copy(SPAWN); P.pos.y = sampleH(SPAWN.x, SPAWN.z);
   P.vel.set(0,0,0); P.grounded = true; P.squash = 0;
   CAM.yaw = 0; CAM.pitch = 0.16;
-  setTask('처음 자리로 돌아왔어요.', '빛나는 원까지 걸어가 보세요');
 }
 
-/* ---------- 임무 안내 ---------- */
-var task = 0, taskDone = [false,false,false,false];
+/* ============================================================================
+   임무 · 수집 · 기록 — 이 게임의 뼈대
+   ============================================================================ */
+
+/* ---------- 저장 (space.v1.*) ---------- */
+function saveGet(k, dflt){
+  try{ var v = localStorage.getItem('space.v1.'+k); return v===null ? dflt : JSON.parse(v); }
+  catch(e){ return dflt; }
+}
+function saveSet(k, v){
+  try{ localStorage.setItem('space.v1.'+k, JSON.stringify(v)); }catch(e){}
+}
+
+/* ---------- 천체별 점프 기록 ---------- */
+var records = saveGet('records', {});
+['earth','moon','mars','europa'].forEach(function(k){
+  if(!records[k]) records[k] = { jump:0, air:0 };
+});
+function noteJump(peak, air){
+  var r = records[bodyKey];
+  if(peak > r.jump + 0.005){
+    r.jump = peak; r.air = air;
+    saveSet('records', records);
+  }
+  P.bestJump = r.jump; P.bestAir = r.air;
+  document.getElementById('uiJump').textContent = r.jump.toFixed(2)+' m';
+  document.getElementById('uiAir').textContent  = r.air.toFixed(2)+' 초';
+}
+
+/* ---------- 표본 ---------- */
+var collected = {};      // 'moon0' → true
+var sampleGroup = new THREE.Group(); scene.add(sampleGroup);
+var activeSamples = [];
+function sampleCount(){ var n=0; for(var k in collected) if(collected[k]) n++; return n; }
+function bodySampleCount(key){
+  var n = 0, list = SAMPLES[key] || [];
+  for(var i=0;i<list.length;i++) if(collected[key+i]) n++;
+  return n;
+}
+function buildSamples(){
+  while(sampleGroup.children.length){
+    var c = sampleGroup.children.pop();
+    if(c.geometry) c.geometry.dispose();
+  }
+  activeSamples.length = 0;
+  var list = SAMPLES[bodyKey];
+  if(!list) return;
+  for(var i=0;i<list.length;i++){
+    if(collected[bodyKey+i]) continue;
+    var s = list[i], x = s.pos[0], z = s.pos[1], y = sampleH(x, z);
+    var m = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 0),
+      new THREE.MeshPhongMaterial({ color:0xffe08a, emissive:0x6b4a00, shininess:40 }));
+    m.position.set(x, y + 0.55, z);
+    m.castShadow = quality.shadow;
+    sampleGroup.add(m);
+    var beam = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 26, 10, 1, true),
+      new THREE.MeshBasicMaterial({ color:0x9ee6ff, transparent:true, opacity:0.22,
+        side:THREE.DoubleSide, depthWrite:false, fog:false,
+        blending:THREE.AdditiveBlending }));
+    beam.position.set(x, y + 13, z);
+    sampleGroup.add(beam);
+    activeSamples.push({ i:i, x:x, z:z, mesh:m });
+  }
+}
+var pkT = null;
+function showPickup(tag, name, desc){
+  document.getElementById('pkTag').textContent = tag;
+  document.getElementById('pkName').textContent = name;
+  document.getElementById('pkDesc').textContent = desc;
+  var el = document.getElementById('pickup');
+  el.classList.add('on');
+  clearTimeout(pkT); pkT = setTimeout(function(){ el.classList.remove('on'); }, 4200);
+}
+function updateSamples(){
+  for(var i=activeSamples.length-1; i>=0; i--){
+    var s = activeSamples[i];
+    var d = Math.hypot(P.pos.x-s.x, P.pos.z-s.z);
+    if(d < 2.0 && Math.abs(P.pos.y - sampleH(s.x,s.z)) < 3.5){
+      collected[bodyKey+s.i] = true;
+      sampleGroup.remove(s.mesh);
+      var data = SAMPLES[bodyKey][s.i];
+      showPickup(BODIES[bodyKey].name+' 표본 '+bodySampleCount(bodyKey)+' / 3', data.name, data.desc);
+      activeSamples.splice(i,1);
+      buildSamples();     // 빛기둥까지 함께 정리
+      updateCounters();
+      saveSet('collected', collected);
+    }
+  }
+}
+function updateCounters(){
+  document.getElementById('uiSamples').textContent = sampleCount()+' / 9';
+  document.getElementById('uiPhotos').textContent  = photos.length+' / 2';
+}
+
+/* ---------- 사진첩 ---------- */
+var photos = [];
+var aimHold = 0, aimReady = false;
+var _pv = new THREE.Vector3();
+function projectToScreen(x, y, z, out){
+  _pv.set(x, y, z).applyMatrix4(camera.matrixWorldInverse);
+  var behind = _pv.z > 0;
+  _pv.applyMatrix4(camera.projectionMatrix);
+  var nx = _pv.x, ny = _pv.y;
+  if(behind){ nx = -nx; ny = -ny; }
+  out.behind = behind; out.nx = nx; out.ny = ny;
+  out.sx = (nx*0.5+0.5)*innerWidth;
+  out.sy = (-ny*0.5+0.5)*innerHeight;
+  out.on = !behind && Math.abs(nx) < 0.94 && Math.abs(ny) < 0.94;
+  return out;
+}
+var _scr = {};
+function updateAim(dt){
+  var wantAim = zoomOn && !!skyBody;
+  document.getElementById('aim').classList.toggle('on', wantAim);
+  if(!wantAim){ aimHold = 0; aimReady = false; document.getElementById('btnShot').classList.remove('on'); return; }
+  projectToScreen(skyBody.position.x, skyBody.position.y, skyBody.position.z, _scr);
+  var inRing = _scr.on && Math.hypot(_scr.sx-innerWidth/2, _scr.sy-innerHeight/2) < 110;
+  var ring = document.getElementById('aimRing');
+  ring.classList.toggle('hit', inRing);
+  if(inRing) aimHold += dt; else aimHold = Math.max(0, aimHold - dt*1.5);
+  aimReady = aimHold >= 2.0;
+  document.getElementById('aimMsg').textContent = aimReady
+    ? (skyBodyLabel+'을(를) 담았어요! 아래 단추를 누르세요')
+    : (inRing ? '그대로! '+Math.max(0,(2.0-aimHold)).toFixed(1)+'초'
+              : skyBodyLabel+'을(를) 동그라미 안에 넣어 보세요');
+  document.getElementById('btnShot').classList.toggle('on', aimReady);
+}
+function takePhoto(){
+  if(!aimReady || !skyBody) return;
+  // 그리기 버퍼가 살아 있는 동안 곧바로 복사해야 한다 (preserveDrawingBuffer 없이)
+  renderer.render(scene, camera);
+  var W = 320, H = Math.round(320 * innerHeight / Math.max(1,innerWidth));
+  var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  try{ cv.getContext('2d').drawImage(canvas, 0, 0, W, H); }catch(e){}
+  var url = '';
+  try{ url = cv.toDataURL('image/jpeg', 0.8); }catch(e){}
+  photos.push({ body:bodyKey, label:skyBodyLabel, url:url,
+                ang: bodyKey==='moon' ? '1.9도' : '11.8도' });
+  updateCounters();
+  showPickup('사진첩에 넣었어요', skyBodyLabel+' 촬영 성공',
+    bodyKey==='moon'
+      ? '달에서 본 지구는 지구에서 본 보름달보다 약 4배 크게 보여요.'
+      : '유로파에서 본 목성은 지구에서 본 보름달보다 약 23배 크게 보여요.');
+  aimHold = 0; aimReady = false;
+  document.getElementById('btnShot').classList.remove('on');
+  setZoom(false);
+}
+
+/* ---------- 지형에서 가장 낮은 곳 · 높은 곳 찾기 ---------- */
+function findExtreme(wantMax){
+  var best = wantMax ? -1e9 : 1e9, bx = 0, bz = 0;
+  for(var x=-64; x<=64; x+=2) for(var z=-64; z<=64; z+=2){
+    if(Math.hypot(x,z) < 18) continue;             // 시작 광장은 제외
+    var h = sampleH(x, z);
+    if(wantMax ? (h > best) : (h < best)){ best = h; bx = x; bz = z; }
+  }
+  return { x:bx, z:bz, h:best };
+}
+
+/* ---------- 임무 목록 ---------- */
+/* 각 임무: body(어느 천체) · text/sub(화면 문구) · begin(준비) · check(달성 판정) · done(성공 문구) */
+var unlocked = { earth:true, moon:false, mars:false, europa:false };
+var mi = 0, missionT = 0, jumpTries = 0, startTime = 0;
+
+function nearPlatform(px, pz, top){
+  return P.grounded && Math.abs(P.pos.x-px) < 3.0 && Math.abs(P.pos.z-pz) < 3.0 &&
+         P.pos.y > top - 0.25;
+}
+function reached(r){
+  return wp.on && Math.hypot(P.pos.x-wp.x, P.pos.z-wp.z) < (r||2.2);
+}
+
+var MISSIONS = [
+  { body:'earth', text:'빛나는 고리까지 걸어가세요.', sub:'방향키로 움직여요',
+    begin:function(){ setWaypoint(14, 10); },
+    check:function(){ return reached(2.2); },
+    done:['첫 걸음 성공!','이제 달리기를 익혀 볼까요?'] },
+
+  { body:'earth', text:'달려서 저 멀리 있는 고리까지 가세요.', sub:'Shift 를 누른 채 걸으면 달려요',
+    begin:function(){ setWaypoint(-34, 30); },
+    check:function(){ return reached(2.4); },
+    done:['잘 달렸어요!','다음은 점프예요'] },
+
+  { body:'earth', text:'낮은 발판(무릎 높이) 위에 올라서세요.', sub:'Space 를 눌러 점프해요',
+    begin:function(){ setWaypoint(8, -6); },
+    check:function(){ return nearPlatform(8, -6, sampleH(8,-6) + 0.8); },
+    done:['올라섰어요!','더 높은 발판이 있어요'] },
+
+  { body:'earth', text:'빨간 깃발이 꽂힌 높은 발판에 올라가 보세요.', sub:'세 번만 힘껏 뛰어 보세요',
+    begin:function(){ setWaypoint(-9, -8); jumpTries = 0; },
+    check:function(){
+      if(nearPlatform(-9, -8, sampleH(-9,-8) + 3.0)) return true;   // 혹시 성공하면 그것도 인정
+      return jumpTries >= 3 || missionT > 40;
+    },
+    done:['지구에서는 이 높이를 뛰어오를 수 없어요.',
+          '지구가 우리를 세게 끌어당기고 있거든요. 달에서는 어떨까요?'],
+    after:function(){ unlock('moon'); } },
+
+  { body:'moon', text:'달에서 똑같은 높은 발판에 한 번에 올라가세요.', sub:'같은 힘으로 뛰어도 훨씬 높이 올라가요',
+    begin:function(){ setWaypoint(-9, -8); },
+    check:function(){ return nearPlatform(-9, -8, sampleH(-9,-8) + 3.0); },
+    done:function(){
+      var e = records.earth.jump, m = records.moon.jump;
+      return ['달에서는 올라갔어요!',
+        '지구에서 '+e.toFixed(2)+' m · 달에서 '+m.toFixed(2)+' m — 달도 끌어당기지만 지구보다 약해요'];
+    } },
+
+  { body:'moon', text:'달의 암석 표본 3개를 모으세요.', sub:'파란 빛기둥이 있는 곳으로 가면 저절로 담겨요',
+    begin:function(){ nextSampleWaypoint(); },
+    tick:function(){ nextSampleWaypoint(); },
+    check:function(){ return bodySampleCount('moon') >= 3; },
+    done:['달 표본 3개를 모두 모았어요!','이번엔 하늘을 봐요'] },
+
+  { body:'moon', text:'🔭 관측으로 하늘의 지구를 동그라미 안에 담아 사진을 찍으세요.',
+    sub:'🔭 단추를 누르고 마우스를 끌어 하늘을 보세요',
+    begin:function(){ clearWaypoint(); },
+    check:function(){ return photos.length >= 1; },
+    done:['지구를 찍었어요!','다음 목적지가 열렸어요 — 화성'],
+    after:function(){ unlock('mars'); } },
+
+  { body:'mars', text:'화성에서 가장 깊은 협곡 바닥까지 내려가세요.', sub:'빛기둥을 따라가요',
+    begin:function(){ var e = findExtreme(false); setWaypoint(e.x, e.z); },
+    check:function(){ return reached(4.0); },
+    done:['협곡 바닥에 닿았어요!','물이 흐른 흔적을 찾아 표본을 모아요'] },
+
+  { body:'mars', text:'화성의 암석 표본 3개를 모으세요.', sub:'파란 빛기둥을 따라가요',
+    begin:function(){ nextSampleWaypoint(); },
+    tick:function(){ nextSampleWaypoint(); },
+    check:function(){ return bodySampleCount('mars') >= 3; },
+    done:['화성 표본 3개 완료!','마지막으로 가장 높은 곳에 올라요'] },
+
+  { body:'mars', text:'화성에서 가장 높은 곳에 올라서세요.', sub:'빛기둥이 서 있는 봉우리예요',
+    begin:function(){ var e = findExtreme(true); setWaypoint(e.x, e.z); },
+    check:function(){ return reached(4.0); },
+    done:['화성 탐사 끝!','얼음 위성 유로파가 열렸어요'],
+    after:function(){ unlock('europa'); } },
+
+  { body:'europa', text:'유로파의 표본 3개를 모으세요.', sub:'얼음이 갈라진 틈 근처에 있어요',
+    begin:function(){ nextSampleWaypoint(); },
+    tick:function(){ nextSampleWaypoint(); },
+    check:function(){ return bodySampleCount('europa') >= 3; },
+    done:['유로파 표본 3개 완료!','마지막 임무예요'] },
+
+  { body:'europa', text:'🔭 관측으로 하늘의 목성을 담아 사진을 찍으세요.',
+    sub:'하늘에서 가장 큰 것을 찾아보세요',
+    begin:function(){ clearWaypoint(); },
+    check:function(){ return photos.length >= 2; },
+    done:['모든 임무를 마쳤어요!','탐사 보고서를 확인하세요'] }
+];
+
+function nextSampleWaypoint(){
+  if(!activeSamples.length){ clearWaypoint(); return; }
+  var best = null, bd = 1e9;
+  for(var i=0;i<activeSamples.length;i++){
+    var s = activeSamples[i], d = Math.hypot(P.pos.x-s.x, P.pos.z-s.z);
+    if(d < bd){ bd = d; best = s; }
+  }
+  if(best && (!wp.on || wp.x !== best.x || wp.z !== best.z)) setWaypoint(best.x, best.z);
+}
+
 function setTask(main, sub){
   document.getElementById('taskText').textContent = main;
   document.getElementById('taskSub').textContent = sub || '';
 }
-function updateTask(){
-  if(task === 0){
-    var d = Math.hypot(P.pos.x-goalPos.x, P.pos.z-goalPos.z);
-    if(d < 1.6){ task = 1; setTask('좋아요! 이번엔 Shift를 누른 채 달려 보세요.', '달리면 화면이 살짝 넓어져요'); }
-  } else if(task === 1){
-    if(P.runBlend > 0.75){ task = 2; setTask('이제 Space를 눌러 점프해 보세요.', '낮은 발판(오른쪽) 위에 올라가 볼까요?'); }
-  } else if(task === 2){
-    if(P.pos.y > 0.6 + sampleH(P.pos.x,P.pos.z) - 0.05 && !P.grounded){
-      task = 3;
-      setTask('높은 발판(빨간 깃발)에도 올라가 보세요.', '지구에서는 아마 안 될 거예요…');
-    }
-  } else if(task === 3){
-    if(P.grounded && P.pos.y > 2.6){
-      task = 4;
-      setTask('올랐어요! 어떤 힘으로 올라갔나요?', '🌗 단추로 다른 천체의 힘을 바꿔 볼 수 있어요');
-    }
+function refreshTask(){
+  var m = MISSIONS[mi];
+  document.getElementById('taskStep').textContent =
+    m ? ('임무 '+(mi+1)+' / '+MISSIONS.length) : '탐사 완료';
+  if(!m){ setTask('탐사를 모두 마쳤어요.', '🗒️ 단추로 보고서를 다시 볼 수 있어요'); return; }
+  if(m.body !== bodyKey){
+    setTask(BODIES[m.body].name+'(으)로 이동하세요.', '🌗 단추를 눌러 '+BODIES[m.body].name+'을(를) 고르세요');
+    clearWaypoint();
+  } else {
+    setTask(m.text, m.sub);
+    if(m.begin) m.begin();
   }
+}
+function unlock(key){
+  if(unlocked[key]) return;
+  unlocked[key] = true;
+  showRecord(BODIES[key].name+'(으)로 갈 수 있어요!', '🌗 단추를 눌러 이동하세요');
+  setTimeout(function(){ openBodyPick(); }, 900);
+}
+function updateMission(dt){
+  var m = MISSIONS[mi];
+  if(!m) return;
+  if(m.body !== bodyKey) return;          // 다른 천체에 있으면 진행하지 않는다
+  missionT += dt;
+  if(m.tick) m.tick();
+  if(m.check()){
+    var d = (typeof m.done === 'function') ? m.done() : m.done;
+    showRecord(d[0], d[1]);
+    if(m.after) m.after();
+    mi++; missionT = 0;
+    if(mi >= MISSIONS.length){ clearWaypoint(); setTimeout(openReport, 2200); }
+    refreshTask();
+  }
+}
+
+/* ---------- 길 안내 화살표 ---------- */
+var guideEl = document.getElementById('guide'),
+    guideArrowEl = document.getElementById('guideArrow'),
+    guideDistEl = document.getElementById('guideDist');
+function updateGuide(){
+  if(!wp.on || zoomOn){ guideEl.classList.remove('on'); return; }
+  var d = Math.hypot(P.pos.x-wp.x, P.pos.z-wp.z);
+  var ty = sampleH(wp.x, wp.z) + 2.0;
+  projectToScreen(wp.x, ty, wp.z, _scr);
+  guideEl.classList.add('on');
+  guideDistEl.textContent = Math.round(d) + ' m';
+  var W = innerWidth, H = innerHeight, pad = 84;
+  if(_scr.on){
+    guideArrowEl.style.display = 'none';
+    guideEl.style.left = clamp(_scr.sx, pad, W-pad) + 'px';
+    guideEl.style.top  = clamp(_scr.sy, pad, H-pad) + 'px';
+  } else {
+    guideArrowEl.style.display = 'block';
+    var dx = _scr.sx - W/2, dy = _scr.sy - H/2;
+    var len = Math.max(1, Math.hypot(dx,dy));
+    // 화면 테두리(안쪽 pad)까지 늘여서 붙인다
+    var t = Math.min((W/2-pad)/Math.max(1,Math.abs(dx)), (H/2-pad)/Math.max(1,Math.abs(dy)));
+    guideEl.style.left = (W/2 + dx*t) + 'px';
+    guideEl.style.top  = (H/2 + dy*t) + 'px';
+    guideArrowEl.style.transform = 'rotate('+(Math.atan2(dy,dx)*180/Math.PI)+'deg)';
+  }
+}
+
+/* ---------- 천체 고르기 ---------- */
+var BODY_ICON = { earth:'🌍', moon:'🌕', mars:'🔴', europa:'🧊' };
+function openBodyPick(){
+  var list = document.getElementById('bodyList');
+  list.innerHTML = '';
+  ['earth','moon','mars','europa'].forEach(function(k){
+    var b = BODIES[k];
+    var btn = document.createElement('button');
+    btn.className = 'bodybtn';
+    btn.setAttribute('aria-current', String(k === bodyKey));
+    var need = MISSIONS[mi] && MISSIONS[mi].body === k ? ' · 지금 임무가 있어요' : '';
+    btn.innerHTML = '<span class="dot">'+(unlocked[k] ? BODY_ICON[k] : '🔒')+'</span>' +
+      '<span>'+b.name+(unlocked[k]?'':' (아직 잠김)')+
+      '<small>끌어당기는 힘 '+b.label+need+'</small></span>';
+    if(!unlocked[k]) btn.disabled = true;
+    else btn.onclick = function(){
+      document.getElementById('bodyPick').classList.remove('on');
+      if(k !== bodyKey) setBody(k);
+      refreshTask();
+    };
+    list.appendChild(btn);
+  });
+  document.getElementById('bodyPick').classList.add('on');
+}
+
+/* ---------- 탐사 보고서 ---------- */
+function openReport(){
+  var el = document.getElementById('repBody');
+  var mins = Math.floor((Date.now()-startTime)/60000), secs = Math.floor((Date.now()-startTime)/1000)%60;
+  var order = ['earth','moon','mars','europa'];
+  var html = '';
+
+  html += '<div class="bigstat">' +
+    '<div><b>'+order.filter(function(k){return unlocked[k];}).length+'</b><span>다녀온 천체</span></div>' +
+    '<div><b>'+sampleCount()+'</b><span>모은 표본</span></div>' +
+    '<div><b>'+photos.length+'</b><span>찍은 사진</span></div>' +
+    '<div><b>'+mins+'분 '+secs+'초</b><span>걸린 시간</span></div></div>';
+
+  html += '<h3>천체별 점프 기록</h3><table><tr><th>천체</th><th>끌어당기는 힘</th>' +
+          '<th>가장 높이 뛴 높이</th><th>공중에 뜬 시간</th></tr>';
+  order.forEach(function(k){
+    if(!unlocked[k]) return;
+    html += '<tr><td>'+BODY_ICON[k]+' '+BODIES[k].name+'</td><td>'+BODIES[k].label+'</td>' +
+      '<td>'+records[k].jump.toFixed(2)+' m</td><td>'+records[k].air.toFixed(2)+' 초</td></tr>';
+  });
+  html += '</table><p style="font-size:17px;color:var(--ink-soft);font-weight:700;margin:8px 0 0">' +
+    '똑같은 힘으로 뛰었는데 높이가 달랐어요. 끌어당기는 힘이 약할수록 높이 올라가고 오래 떠 있어요. ' +
+    '어느 곳에서도 끌어당기는 힘은 사라지지 않아요.</p>';
+
+  html += '<h3>모은 표본</h3>';
+  var any = false;
+  ['moon','mars','europa'].forEach(function(k){
+    var list = SAMPLES[k], rows = '';
+    for(var i=0;i<list.length;i++) if(collected[k+i]){
+      rows += '<li><b>'+list[i].name+'</b> — '+list[i].desc+'</li>'; any = true;
+    }
+    if(rows) html += '<p style="font-weight:800;margin:8px 0 4px">'+BODY_ICON[k]+' '+BODIES[k].name+'</p><ul>'+rows+'</ul>';
+  });
+  if(!any) html += '<p style="font-size:18px">아직 모은 표본이 없어요.</p>';
+
+  html += '<h3>사진첩</h3>';
+  if(photos.length){
+    html += '<div class="shots">';
+    photos.forEach(function(p){
+      html += '<figure>' + (p.url ? '<img alt="'+p.label+' 사진" src="'+p.url+'">' : '') +
+        '<figcaption>'+BODIES[p.body].name+'에서 본 '+p.label+
+        '<br><span style="font-weight:600">하늘에서 차지하는 크기 '+p.ang+'</span></figcaption></figure>';
+    });
+    html += '</div>';
+  } else html += '<p style="font-size:18px">아직 찍은 사진이 없어요.</p>';
+
+  el.innerHTML = html;
+  document.getElementById('report').classList.add('on');
 }
 
 /* ---------- 천체 전환 ---------- */
@@ -1241,16 +1809,19 @@ function setBody(key){
   // 공기가 없는 곳의 햇빛은 물들지 않는다 — 달을 회색으로 보이게 하는 핵심
   sun.color.set(key==='mars' ? 0xffe8d0 : (key==='earth' ? 0xfff4e2 : 0xffffff));
   hemi.intensity = key==='earth' ? 0.55 : 0.30;
-  P.bestJump = 0; P.bestAir = 0;
+  P.bestJump = records[key].jump; P.bestAir = records[key].air;
   document.getElementById('uiBody').textContent = b.name;
   document.getElementById('uiGrav').textContent = b.label;
-  document.getElementById('uiJump').textContent = '0.00 m';
-  document.getElementById('uiAir').textContent = '0.00 초';
+  document.getElementById('uiJump').textContent = records[key].jump.toFixed(2)+' m';
+  document.getElementById('uiAir').textContent = records[key].air.toFixed(2)+' 초';
   buildSkyBody(key);
   document.getElementById('uiSkyRow').hidden = !skyBodyLabel;
   document.getElementById('uiSky').textContent = skyBodyLabel || '—';
   buildTerrain(); buildProps();
+  buildSamples(); refreshWaypoint();
+  P.pos.x = SPAWN.x; P.pos.z = SPAWN.z;
   P.pos.y = sampleH(P.pos.x, P.pos.z);
+  P.vel.set(0,0,0);
   if(!firstBodySet){
     if(key === 'moon'){
       showRecord('달에 왔어요', '하늘을 올려다보면 지구가 보여요. 달도 우리를 끌어당겨요 — 지구보다 약할 뿐이에요');
@@ -1324,6 +1895,8 @@ function step(dt){
   if(P.buffer > 0 && P.coyote > 0){
     P.vel.y = JUMP_V0; P.buffer = 0; P.coyote = 0; P.grounded = false;
     P.jumpStartY = P.pos.y; P.airborneFrom = now;
+    // 높은 발판 근처에서 뛴 횟수 — "지구에서는 안 된다"를 스스로 겪게 하는 데 쓴다
+    if(Math.abs(P.pos.x+9) < 6 && Math.abs(P.pos.z+8) < 6) jumpTries++;
   }
   if(!jumpHeld() && P.vel.y > 0.4) P.vel.y *= Math.pow(0.02, dt*8);   // 가변 점프
 
@@ -1357,15 +1930,8 @@ function step(dt){
       var impact = clamp(Math.abs(P.vel.y)/(JUMP_V0*1.6), 0, 1);
       P.squash = Math.max(P.squash, impact);
       if(impact > 0.5 && opt.shake) CAM.trauma = Math.min(1, CAM.trauma + impact*0.6);
-      // 점프 기록
-      var peak = P.peakY - P.jumpStartY;
-      if(peak > P.bestJump + 0.01){
-        P.bestJump = peak;
-        var air = (now - P.airborneFrom)/1000;
-        P.bestAir = air;
-        document.getElementById('uiJump').textContent = peak.toFixed(2)+' m';
-        document.getElementById('uiAir').textContent = air.toFixed(2)+' 초';
-      }
+      // 점프 기록 (천체별로 따로 저장한다 — 보고서에서 나란히 비교한다)
+      noteJump(P.peakY - P.jumpStartY, (now - P.airborneFrom)/1000);
     }
     P.pos.y = gh; P.vel.y = 0; P.grounded = true;
     P.peakY = P.pos.y;
@@ -1378,6 +1944,45 @@ function step(dt){
   CAM.trauma = Math.max(0, CAM.trauma - dt*1.8);
 }
 
+/* ---------- 타이틀 화면 장면 ----------
+   달 표면에 선 우주비행사 뒤로 별과 지구가 떠 있는 실제 3D 장면을 천천히 돌려 보여준다.
+   그림 파일을 쓰지 않고도 "우주"가 되는 가장 확실한 방법이다. */
+var titleSpin = 0, _tLook = new THREE.Vector3(), _tRight = new THREE.Vector3();
+function titleFrame(dt){
+  if(!CH.rig) return;
+  if(!reduceMotion) titleSpin += dt*0.30;
+  CH.rig.position.set(P.pos.x, P.pos.y, P.pos.z);
+  CH.rig.rotation.y = titleSpin;
+  applyPose(dt, 0, 0, true, 0, 0);
+  CH.blob.position.set(P.pos.x, sampleH(P.pos.x,P.pos.z)+0.02, P.pos.z);
+  CH.blob.scale.set(1.5,1.5,1);
+  CH.blob.material.opacity = 0.85;
+
+  // 카메라는 고정. 인물을 화면 오른쪽에 두려고 바라보는 점을 왼쪽으로 밀어 둔다.
+  var a = 0.16, d = 3.6;
+  camera.position.set(P.pos.x + Math.sin(a)*d, P.pos.y + 1.55, P.pos.z + Math.cos(a)*d);
+  _tRight.set(Math.cos(a), 0, -Math.sin(a));
+  _tLook.set(P.pos.x, P.pos.y + 1.02, P.pos.z).addScaledVector(_tRight, -1.25);
+  camera.lookAt(_tLook);
+  if(Math.abs(camera.fov - 46) > 0.05){ camera.fov = 46; camera.updateProjectionMatrix(); }
+
+  sky.position.copy(camera.position);
+  stars.position.copy(camera.position);
+  if(skyBody){
+    // 화면 오른쪽 위에 지구가 꼭 들어오도록 카메라 기준으로 놓는다 (타이틀 화면 전용)
+    camera.updateMatrixWorld();
+    var fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+    var rgt = new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
+    var upv = new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion);
+    var dvec = fwd.multiplyScalar(1).addScaledVector(rgt, 0.22).addScaledVector(upv, 0.26).normalize();
+    skyBody.position.copy(camera.position).addScaledVector(dvec, skyBody.userData.dist);
+  }
+  sun.position.set(P.pos.x + sunDir.x*45, P.pos.y + sunDir.y*45, P.pos.z + sunDir.z*45);
+  sun.target.position.set(P.pos.x, P.pos.y, P.pos.z);
+  sun.target.updateMatrixWorld();
+  renderer.render(scene, camera);
+}
+
 /* ---------- 루프 ---------- */
 var now = 0, last = 0, started = false;
 var frames = [], fpsEl = document.getElementById('fps');
@@ -1387,7 +1992,7 @@ function tick(t){
   requestAnimationFrame(tick);
   now = t;
   var dt = Math.min(0.1, (t - last)/1000); last = t;
-  if(!started) return;
+  if(!started){ titleFrame(dt); return; }
 
   // 고정 스텝 물리
   acc += dt;
@@ -1468,9 +2073,18 @@ function tick(t){
   sun.target.position.set(qx, P.pos.y, qz);
   sun.target.updateMatrixWorld();
 
-  if(goalRing && !reduceMotion) goalRing.rotation.z += dt*0.8;
+  if(!reduceMotion){
+    if(goalRing) goalRing.rotation.z += dt*0.8;
+    for(var si=0; si<activeSamples.length; si++){
+      var sm = activeSamples[si].mesh;
+      sm.rotation.y += dt*1.4; sm.rotation.x += dt*0.7;
+    }
+  }
 
-  updateTask();
+  updateSamples();
+  updateMission(dt);
+  updateGuide();
+  updateAim(dt);
   renderer.render(scene, camera);
 
   // fps 감시 · 자동 품질 조절
@@ -1490,10 +2104,10 @@ function reapplyQuality(){
   renderer.shadowMap.enabled = quality.shadow;
   sun.castShadow = quality.shadow;
   TER.seg = quality.seg;
-  buildSkyBody(key);
+  buildSkyBody(bodyKey);                 // ★ 예전에 정의되지 않은 key 를 넘겨 오류가 났다
   document.getElementById('uiSkyRow').hidden = !skyBodyLabel;
   document.getElementById('uiSky').textContent = skyBodyLabel || '—';
-  buildTerrain(); buildProps();
+  buildTerrain(); buildProps(); buildSamples(); refreshWaypoint();
   resize();
   qualHistory = 1;
 }
@@ -1538,29 +2152,42 @@ addEventListener('keydown', function(e){
   document.getElementById('help').classList.remove('on');
 });
 
-var bodyOrder = ['earth','moon','mars','europa'], bodyIdx = 0;
 document.getElementById('btnZoom').onclick = function(){ setZoom(!zoomOn); };
-document.getElementById('btnGrav').onclick = function(){
-  setZoom(false);
-  bodyIdx = (bodyIdx+1) % bodyOrder.length;
-  setBody(bodyOrder[bodyIdx]);
-};
+document.getElementById('btnGrav').onclick = function(){ setZoom(false); openBodyPick(); };
+document.getElementById('btnCloseBody').onclick = function(){ document.getElementById('bodyPick').classList.remove('on'); };
+document.getElementById('btnShot').onclick = function(){ takePhoto(); };
+document.getElementById('btnReport').onclick = function(){ openReport(); };
+document.getElementById('btnCloseRep').onclick = function(){ document.getElementById('report').classList.remove('on'); };
+document.getElementById('btnPrint').onclick = function(){ window.print(); };
+addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  document.getElementById('bodyPick').classList.remove('on');
+  document.getElementById('report').classList.remove('on');
+});
 
 document.getElementById('btnGo').onclick = function(){
   document.getElementById('intro').style.display = 'none';
-  ['topLeft','topRight','taskBar','fps'].forEach(function(id){ document.getElementById(id).hidden = false; });
+  document.body.classList.add('playing');
+  ['topLeft','topRight','taskBar','collect','fps'].forEach(function(id){ document.getElementById(id).hidden = false; });
   Array.prototype.forEach.call(document.querySelectorAll('#segMode button'), function(b){
     b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === opt.mode));
   });
+  firstBodySet = true;
+  setBody(pendingBody);
+  respawn(); P.peakY = P.pos.y;
+  CAM.cur = CAM.dist;
   started = true; last = performance.now();
-  setTask('빛나는 원까지 걸어가 보세요.', opt.mode === 'easy' ? '방향키로 움직여요' : '방향키나 WASD로 움직여요');
+  startTime = Date.now();
+  updateCounters();
+  refreshTask();
 };
 
 /* ---------- 시작 ---------- */
+var pendingBody = 'earth';               // 탐사 시작 단추를 누르면 갈 곳
 buildTerrain();
 buildProps();
 buildCharacter();
-setBody('earth');
+setBody('moon');                         // 타이틀 화면 배경(달 표면 + 지구)
 respawn();
 P.peakY = P.pos.y;
 
@@ -1568,7 +2195,14 @@ P.peakY = P.pos.y;
 try{
   var qs = new URLSearchParams(location.search);
   if(qs.get('start') === '1'){
-    if(qs.get('body') && BODIES[qs.get('body')]){ firstBodySet = true; setBody(qs.get('body')); }
+    if(qs.get('body') && BODIES[qs.get('body')]){
+      var bk = qs.get('body');
+      // 수업 중 특정 천체를 바로 보여줄 때. 거기까지의 천체를 함께 열어 준다.
+      var ord = ['earth','moon','mars','europa'];
+      for(var oi=0; oi<=ord.indexOf(bk); oi++) unlocked[ord[oi]] = true;
+      for(var mj=0; mj<MISSIONS.length; mj++){ if(MISSIONS[mj].body === bk){ mi = mj; break; } }
+      pendingBody = bk;
+    }
     document.getElementById('btnGo').click();
   }
 }catch(e){}
