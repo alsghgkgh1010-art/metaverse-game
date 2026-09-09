@@ -284,6 +284,30 @@ canvas{
   background:var(--paper-2); }
 .sheet-actions .grow{ flex:1 1 auto; }
 
+.qtime{ position:relative; height:26px; background:var(--paper-3);
+  border-bottom:2px solid var(--ink); overflow:hidden; }
+.qtime-fill{ height:100%; width:100%; background:var(--ok);
+  transition:width .25s linear, background .3s linear; }
+.qtime-text{ position:absolute; inset:0; display:grid; place-items:center;
+  font-size:15px; font-weight:800; color:var(--ink);
+  text-shadow:0 1px 0 rgba(255,255,255,.75); letter-spacing:.02em; }
+.qwarn{ margin:0 0 var(--s4); padding:var(--s3) var(--s4); border-radius:12px;
+  background:#fdf0e0; border:2px solid var(--dan-gold); font-weight:800; font-size:17px; }
+.items{ display:flex; gap:var(--s3); margin-top:var(--s4); flex-wrap:wrap; }
+.item{ flex:1 1 auto; min-height:52px; padding:0 var(--s4); cursor:pointer;
+  border:2px solid var(--ink); border-radius:12px; background:var(--paper-2);
+  font-weight:800; font-size:16px; }
+.item:hover:not(:disabled){ background:var(--paper-3); }
+.item:disabled{ cursor:default; }
+.choice.gone{ opacity:.25; text-decoration:line-through; pointer-events:none; }
+.confetti{ position:absolute; top:34%; width:9px; height:14px; border-radius:2px;
+  pointer-events:none; z-index:5;
+  animation:conf 1.2s cubic-bezier(.2,.7,.4,1) forwards; }
+@keyframes conf{
+  0%   { transform:translate(0,0) rotate(0deg); opacity:1; }
+  100% { transform:translate(var(--dx), 260px) rotate(var(--rot)); opacity:0; }
+}
+.sheet{ position:relative; }
 .relic-art{ display:grid; place-items:center; padding:var(--s4);
   background:radial-gradient(circle at 50% 45%, rgba(120,200,255,.22), rgba(20,16,28,.08) 70%);
   border:2px dashed var(--dan-blue); border-radius:16px; }
@@ -500,9 +524,16 @@ canvas{
       <span class="badge type" id="qType">고르기</span>
       <span class="badge" id="qNo">1 / 20</span>
     </div>
+    <div class="qtime"><div class="qtime-fill" id="qTimeFill"></div>
+      <span class="qtime-text" id="qTimeText">30초</span></div>
     <div class="sheet-body">
       <p class="q-text" id="qText"></p>
+      <p class="qwarn" id="qTimeWarn" hidden>⏰ 시간이 다 됐어요. 천천히 풀어도 괜찮아요 (점수는 조금 줄어요)</p>
       <div id="qAnswerArea"></div>
+      <div class="items">
+        <button class="item" id="itFifty">🔍 보기 2개 지우기 <b>🪙3</b></button>
+        <button class="item" id="itFreeze">⏸ 시간 멈추기 <b>🪙2</b></button>
+      </div>
       <div class="hintbox" id="qHint"></div>
       <div class="verdict" id="qVerdict">
         <h3 id="qVerdictTitle"></h3>
@@ -511,7 +542,7 @@ canvas{
       </div>
     </div>
     <div class="sheet-actions">
-      <button class="btn" id="btnHint">💡 힌트 보기</button>
+      <button class="btn" id="btnHint">💡 힌트 <b style="margin-left:6px">🪙2</b></button>
       <button class="btn btn-primary btn-lg grow" id="btnCheck">확인</button>
       <button class="btn btn-blue btn-lg grow" id="btnNext" style="display:none">계속 탐험하기</button>
       <button class="btn btn-ghost" id="btnCloseQuiz">나중에 풀기</button>
@@ -1008,6 +1039,8 @@ var Snd = (function(){
     coin:  function(){ tone(988,0,.07); tone(1319,.06,.12); },
     caught:function(){ tone(320,0,.13,'sawtooth',.12); tone(220,.11,.20,'sawtooth',.12); tone(160,.28,.26,'sawtooth',.10); },
     push:  function(){ tone(110,0,.10,'square',.07); tone(90,.07,.14,'square',.05); },
+    timeup:function(){ tone(300,0,.16,'square',.09); tone(240,.15,.22,'square',.08); },
+    spend: function(){ tone(760,0,.05,'triangle',.09); tone(560,.05,.09,'triangle',.07); },
     combo: function(n){ for(var i=0;i<Math.min(n,4);i++) tone(660+i*140, i*0.06, .16); },
     relic: function(){ [523,659,784,1047].forEach(function(f,i){ tone(f, i*0.10, .30, 'triangle', .15); }); },
     clear: function(){
@@ -1781,6 +1814,7 @@ function loop(t){
   requestAnimationFrame(loop);
   if(!S || !$('game').classList.contains('on')) { last = t; return; }
   var dt = Math.min(50, t - last) / 1000; last = t;
+  if($('quiz').classList.contains('on')) 시간갱신(dt);
 
   if(!busy){
     var vx = 0, vy = 0;
@@ -1928,10 +1962,16 @@ function openQuiz(idx){
     setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 60);
   }
 
+  Q시간 = Q시간최대; Q멈춤 = false;
+  $('qTimeFill').style.width = '100%';
+  $('qTimeFill').style.background = 'var(--ok)';
+  $('qTimeText').textContent = '남은 시간 ' + Q시간최대 + '초';
+  $('qTimeWarn').hidden = true;
+  아이템갱신();
   $('qHint').textContent = q.힌트 || '';
   $('qHint').classList.remove('on');
   $('btnHint').style.display = q.힌트 ? '' : 'none';
-  $('btnHint').textContent = '💡 힌트 보기 (엽전 2)';
+  $('btnHint').innerHTML = '💡 힌트 <b style="margin-left:6px">🪙2</b>';
   $('btnHint').disabled = false;
   $('qVerdict').className = 'verdict';
   $('btnCheck').style.display = ''; $('btnCheck').disabled = false;
@@ -1980,7 +2020,8 @@ function onCheck(){
 
   checked = true;
   a.done = true; a.right = ok;
-  var pts = ok ? (a.usedHint ? 60 : (a.tries > 1 ? 70 : 100)) : 0;
+  var 계산 = 점수계산(a);
+  var pts = ok ? 계산.점수 : 0;
   if(ok){
     S.연속 = (S.연속 || 0) + 1;
     if(S.연속 >= 2){ var b = Math.min(S.연속, 5) * 15; pts += b; Snd.combo(S.연속); }
@@ -1991,8 +2032,11 @@ function onCheck(){
   vd2.className = 'verdict ' + (ok ? 'ok on' : 'no on');
   $('qVerdictTitle').textContent = ok ? '⭕ 정답이에요!' : '❌ 아쉬워요';
   $('qVerdictAns').textContent = ok
-    ? ('+' + pts + '점' + (S.연속 >= 2 ? ('   🔥 연속 ' + S.연속 + '문제 정답!') : ''))
+    ? ('+' + pts + '점' + (계산.속도 > 0 ? ('  (빠르기 +' + 계산.속도 + ')') : '')
+       + (S.연속 >= 2 ? ('   🔥 연속 ' + S.연속 + '문제 정답!') : ''))
     : ('정답: ' + q.정답);
+  if(ok) 축하(S.연속 || 1);
+  BGM.긴장(0); 아이템갱신();
   $('qVerdictWhy').textContent = q.해설 || '';
   if(ok) Snd.right(); else Snd.wrong();
 
@@ -2146,6 +2190,84 @@ $('btnRetryWrong').onclick = function(){
   setTip('틀린 문제만 다시 풀어 보세요.');
 };
 
+/* ============================================================================
+   문제 창을 게임답게 — 남은 시간 · 빠르기 보너스 · 도움 아이템 · 정답 효과
+   ============================================================================ */
+var Q시간 = 0, Q시간최대 = 30, Q멈춤 = false, Q반칙 = null;
+
+function 시간갱신(dt){
+  if(curQ < 0 || checked || Q멈춤) return;
+  Q시간 = Math.max(0, Q시간 - dt);
+  var 비율 = Q시간 / Q시간최대;
+  var bar = $('qTimeFill');
+  if(bar){
+    bar.style.width = (비율*100).toFixed(1) + '%';
+    bar.style.background = 비율 > 0.5 ? 'var(--ok)' : (비율 > 0.2 ? 'var(--dan-gold)' : 'var(--no)');
+  }
+  var pt = $('qTimeText');
+  if(pt) pt.textContent = Q멈춤 ? '⏸ 시간이 멈췄어요' : ('남은 시간 ' + Math.ceil(Q시간) + '초');
+  // 시간이 얼마 안 남으면 음악이 조여든다
+  if(비율 < 0.25) BGM.긴장(1 - 비율/0.25);
+  else BGM.긴장(0);
+  if(Q시간 <= 0 && !checked){
+    Snd.timeup();
+    var w = $('qTimeWarn'); if(w) w.hidden = false;
+  }
+}
+function 점수계산(a){
+  var 비율 = clamp(Q시간 / Q시간최대, 0, 1);
+  var 속도 = Math.round(40 * 비율);
+  var pts = 60 + 속도;
+  if(a.usedHint) pts = Math.round(pts * 0.6);
+  if(a.tries > 1) pts = Math.round(pts * 0.7);
+  return { 점수: pts, 속도: 속도 };
+}
+
+/* ---- 도움 아이템 ---- */
+function 아이템갱신(){
+  var a = S.answered[curQ] || {};
+  var q = 문제은행[curQ];
+  var 엽 = S.엽전 || 0;
+  var b1 = $('itFifty'), b2 = $('itFreeze'), b3 = $('btnHint');
+  var 고르기 = (q && q.유형 === '고르기');
+  b1.style.display = 고르기 ? '' : 'none';
+  b1.disabled = !고르기 || a.usedFifty || 엽 < 3 || checked;
+  b2.disabled = a.usedFreeze || 엽 < 2 || checked || Q멈춤;
+  b3.disabled = a.usedHint || 엽 < 2 || checked;
+  [b1,b2,b3].forEach(function(b){ b.style.opacity = b.disabled ? .45 : 1; });
+}
+function 엽전쓰기(n){
+  if((S.엽전||0) < n){ 흔들기(); return false; }
+  S.엽전 -= n; updateHud(); updateGoals(); save(); Snd.spend();
+  return true;
+}
+function 흔들기(){
+  var s = document.querySelector('#quiz .sheet');
+  if(!s || reduceMotion) return;
+  s.animate([{transform:'translateX(0)'},{transform:'translateX(-8px)'},
+             {transform:'translateX(8px)'},{transform:'translateX(0)'}], {duration:230});
+}
+
+/* ---- 정답 축하 효과 ---- */
+function 축하(콤보){
+  if(reduceMotion) return;
+  var host = document.querySelector('#quiz .sheet');
+  if(!host) return;
+  var 색 = ['#c28f2c','#b5372e','#2b6178','#3f6b4e','#e6cf4a','#ffffff'];
+  var n = Math.min(18 + 콤보*4, 40);
+  for(var i=0;i<n;i++){
+    var d = document.createElement('i');
+    d.className = 'confetti';
+    d.style.background = 색[i % 색.length];
+    d.style.left = (18 + Math.random()*64) + '%';
+    d.style.setProperty('--dx', ((Math.random()-0.5)*220).toFixed(0) + 'px');
+    d.style.setProperty('--rot', (Math.random()*720-360).toFixed(0) + 'deg');
+    d.style.animationDelay = (Math.random()*0.12).toFixed(2) + 's';
+    host.appendChild(d);
+    setTimeout(function(el){ return function(){ el.remove(); }; }(d), 1500);
+  }
+}
+
 /* ---------- 유물 · 이야기 ---------- */
 var 유물아이콘 = {
   '책':   function(x,c){ c.fillStyle='#8a5a2c'; c.fillRect(x-52,-38,104,76);
@@ -2202,18 +2324,34 @@ $('btnTalkNext').onclick = function(){
 $('btnHint').onclick = function(){
   var a = S.answered[curQ] || (S.answered[curQ] = {done:false,right:false,usedHint:false,tries:0,given:''});
   if(!a.usedHint){
-    if((S.엽전||0) < 2){
-      setShake();
-      $('qHint').textContent = '엽전이 모자라요. 마당을 돌아다니며 엽전을 주워 보세요. (2개 필요)';
-      $('qHint').classList.add('on');
-      return;
-    }
-    S.엽전 -= 2; a.usedHint = true;
+    if(!엽전쓰기(2)) return;
+    a.usedHint = true;
     $('qHint').textContent = 문제은행[curQ].힌트 || '';
-    updateHud(); updateGoals(); save();
   }
   $('qHint').classList.add('on');
-  this.disabled = true;
+  아이템갱신();
+};
+$('itFifty').onclick = function(){
+  var a = S.answered[curQ] || (S.answered[curQ] = {done:false,right:false,usedHint:false,tries:0,given:''});
+  if(a.usedFifty || checked) return;
+  if(!엽전쓰기(3)) return;
+  a.usedFifty = true;
+  var q = 문제은행[curQ];
+  var 버튼 = $('qAnswerArea').querySelectorAll('.choice');
+  var 오답 = [];
+  Array.prototype.forEach.call(버튼, function(b, i){ if(q.보기[i] !== q.정답) 오답.push(b); });
+  오답.sort(function(){ return Math.random()-0.5; });
+  오답.slice(0,2).forEach(function(b){ b.classList.add('gone'); b.setAttribute('aria-pressed','false'); });
+  Snd.open(); 아이템갱신();
+};
+$('itFreeze').onclick = function(){
+  var a = S.answered[curQ] || (S.answered[curQ] = {done:false,right:false,usedHint:false,tries:0,given:''});
+  if(a.usedFreeze || checked) return;
+  if(!엽전쓰기(2)) return;
+  a.usedFreeze = true; Q멈춤 = true;
+  $('qTimeText').textContent = '⏸ 시간이 멈췄어요';
+  $('qTimeFill').style.background = 'var(--dan-blue)';
+  아이템갱신();
 };
 $('btnCheck').onclick = onCheck;
 $('btnNext').onclick = function(){
@@ -2327,6 +2465,7 @@ var BGM = (function(){
   var ac = null, master = null, on = false, timer = null;
   var bar = 0, nextT = 0;
   var 분위기 = { 빠르기:84, 밀도:0.55, 저음:true };
+  var 긴장 = 0, 긴장목표 = 0;      // 0=평온  1=쫓기는 중
 
   // 평조 5음계 (C D F G A) — 국악의 밝고 씩씩한 느낌
   var 음계 = [261.63, 293.66, 349.23, 392.00, 440.00,
@@ -2398,9 +2537,11 @@ var BGM = (function(){
   }
 
   /* 한 장단(12/8 굿거리) 예약 */
-  function 한장단(t0){
-    var 박 = 60 / 분위기.빠르기 / 2;             // 8분음표 길이
-    var 장단 = [1,0,0, 2,0,2, 1,0,0, 2,0,0];     // 1=덩, 2=덕
+  function 한장단(t0, 박){
+    // 긴장하면 장단이 촘촘해진다 (자진모리처럼)
+    var 장단 = 긴장 > 0.45
+      ? [1,0,2, 1,0,2, 1,0,2, 1,2,2]
+      : [1,0,0, 2,0,2, 1,0,0, 2,0,0];            // 1=덩, 2=덕
     for(var i=0;i<12;i++){
       if(!장단[i]) continue;
       장구(t0 + i*박, 장단[i] === 1, 장단[i] === 1 ? 0.28 : 0.15);
@@ -2418,10 +2559,34 @@ var BGM = (function(){
       if(멜로디자리 < 2) 멜로디자리 = 3;
       if(멜로디자리 > 9) 멜로디자리 = 8;
       대금(음계[멜로디자리], t0 + (k===0 ? 0 : 6*박) + 박*0.1,
-           박*(k===0 ? 3.4 : 2.6), 0.085);
+           박*(k===0 ? 3.4 : 2.6), 0.085*(1 - 0.55*긴장));
+    }
+    // 긴장 층 — 낮게 두근거리는 맥박과 불안한 반음
+    if(긴장 > 0.12){
+      var a2 = ac;
+      for(var p2=0;p2<4;p2++){                    // 심장 박동처럼
+        var o2 = a2.createOscillator(), g2 = a2.createGain();
+        o2.type = 'sine'; o2.frequency.setValueAtTime(64, t0 + p2*박*3);
+        g2.gain.setValueAtTime(0.0001, t0 + p2*박*3);
+        g2.gain.exponentialRampToValueAtTime(0.16*긴장, t0 + p2*박*3 + 0.03);
+        g2.gain.exponentialRampToValueAtTime(0.0001, t0 + p2*박*3 + 0.34);
+        o2.connect(g2); g2.connect(master);
+        o2.start(t0 + p2*박*3); o2.stop(t0 + p2*박*3 + 0.4);
+      }
+      if(긴장 > 0.5){                              // 조여드는 반음 (5음계 밖 — 불안하게)
+        var o3 = a2.createOscillator(), g3 = a2.createGain(), lp3 = a2.createBiquadFilter();
+        o3.type = 'sawtooth';
+        o3.frequency.setValueAtTime(음계[0]*1.06, t0);
+        lp3.type = 'lowpass'; lp3.frequency.setValueAtTime(900, t0);
+        g3.gain.setValueAtTime(0.0001, t0);
+        g3.gain.exponentialRampToValueAtTime(0.05*긴장, t0 + 0.5);
+        g3.gain.exponentialRampToValueAtTime(0.0001, t0 + 박*12);
+        o3.connect(lp3); lp3.connect(g3); g3.connect(master);
+        o3.start(t0); o3.stop(t0 + 박*12 + 0.1);
+      }
     }
     // 낮은 지속음 (장중한 느낌)
-    if(분위기.저음 && bar % 2 === 0){
+    if(분위기.저음 && 긴장 < 0.3 && bar % 2 === 0){
       var a = ac, o = a.createOscillator(), g = a.createGain();
       o.type = 'sine'; o.frequency.setValueAtTime(음계[0]/2, t0);
       g.gain.setValueAtTime(0.0001, t0);
@@ -2433,9 +2598,11 @@ var BGM = (function(){
 
   function 예약루프(){
     if(!on || !ac) return;
-    var 박 = 60 / 분위기.빠르기 / 2, 길이 = 박*12;
+    긴장 += (긴장목표 - 긴장) * 0.34;                 // 갑자기 튀지 않게 서서히
+    var 빠르기 = 분위기.빠르기 * (1 + 0.34*긴장);      // 긴장할수록 장단이 빨라진다
+    var 박 = 60 / 빠르기 / 2, 길이 = 박*12;
     while(nextT < ac.currentTime + 1.6){
-      한장단(nextT); nextT += 길이; bar++;
+      한장단(nextT, 박); nextT += 길이; bar++;
     }
     timer = setTimeout(예약루프, 400);
   }
@@ -2460,6 +2627,7 @@ var BGM = (function(){
       }
     },
     켜짐: function(){ return on; },
+    긴장: function(v){ 긴장목표 = clamp(v, 0, 1); },
     소리: function(v){ if(master && ac){ try{
         master.gain.cancelScheduledValues(ac.currentTime);
         master.gain.setValueAtTime(v, ac.currentTime);
@@ -2534,6 +2702,10 @@ function 군사갱신(dt){
     G.alert = 봄 ? Math.min(1, G.alert + dt*2.4) : Math.max(0, G.alert - dt*1.6);
     if(G.alert >= 1) 들켰다();
   }
+  // 가장 위험한 군사의 경계 수준을 음악에 넘긴다
+  var 최고 = 0;
+  for(var i=0;i<guards.length;i++) 최고 = Math.max(최고, guards[i].alert);
+  if(!$('quiz').classList.contains('on')) BGM.긴장(최고);
   if(들킴 > 0) 들킴 -= dt;
 }
 function 시야열림(x1,y1,x2,y2){          // 벽 너머는 못 본다
