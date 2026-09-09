@@ -243,9 +243,71 @@ input[type=range]{ flex:1 1 160px; min-width:140px; height:44px; }
 .bigstat b{ display:block; font-size:30px; color:var(--dan-red); }
 .bigstat span{ font-size:16px; font-weight:700; color:var(--ink-soft); }
 
+/* ---- 우주복 고르기 (시작 화면) ---- */
+.suitpick{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.suitpick .lab{ font-size:17px; font-weight:800; color:#cfe0f5; width:100%; margin-bottom:2px; }
+.suitbtn{ min-width:var(--tap); min-height:var(--tap); padding:0 14px; border-radius:12px;
+  border:2px solid rgba(150,190,255,.42); background:rgba(16,26,48,.72); color:#eaf2ff;
+  font-size:17px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+.suitbtn .chip{ width:22px; height:22px; border-radius:6px; border:2px solid rgba(255,255,255,.75);
+  display:inline-block; }
+.suitbtn[aria-pressed="true"]{ border-color:#ffd76a; border-width:3px; background:rgba(43,97,120,.92);
+  box-shadow:0 0 0 3px rgba(255,215,106,.22); }
+.suitbtn[aria-pressed="true"]::after{ content:"✓"; color:#ffd76a; font-size:18px; }
+
+/* ---- 생명 유지 게이지 (산소·에너지) + 탐사 등급 ---- */
+#vitals{ left:14px; top:196px; min-width:236px; }
+#vitals .g{ margin-bottom:8px; }
+#vitals .g:last-child{ margin-bottom:0; }
+#vitals .glab{ display:flex; align-items:baseline; gap:6px; font-size:17px; font-weight:800; line-height:1.2; }
+#vitals .glab .nm{ flex:1 1 auto; }
+#vitals .glab .nv{ font-variant-numeric:tabular-nums; }
+#vitals .bar{ position:relative; height:16px; margin-top:3px; border:2px solid var(--ink);
+  border-radius:999px; background:var(--paper-3); overflow:hidden; }
+#vitals .fill{ position:absolute; inset:0; width:100%; transform-origin:left center;
+  transition:transform 120ms linear; }
+/* 색만으로 구분하지 않는다 — 아이콘·숫자·무늬를 함께 쓴다 */
+#o2Fill{ background:repeating-linear-gradient(90deg,#2b6178 0 7px,#357790 7px 14px); }
+#enFill{ background:repeating-linear-gradient(45deg,#c28f2c 0 6px,#dca63c 6px 12px); }
+#xpFill{ background:repeating-linear-gradient(-45deg,#b5372e 0 6px,#cf4b3f 6px 12px); }
+#vitals .bar.low #o2Fill{ background:repeating-linear-gradient(90deg,#b5372e 0 7px,#8c261f 7px 14px); }
+#vitals .warn{ font-size:16px; font-weight:800; color:var(--dan-red); margin-top:4px; }
+
+/* ---- 스킬 단추 ---- */
+#skills{ position:fixed; z-index:22; left:50%; transform:translateX(-50%); bottom:126px;
+  display:none; gap:8px; pointer-events:auto; }
+body.playing #skills.on{ display:flex; }
+.sk{ position:relative; width:76px; min-height:76px; padding:4px 2px 5px; border:2px solid var(--ink);
+  border-radius:14px; background:rgba(246,241,228,.94); box-shadow:var(--shadow); cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  font-weight:800; overflow:hidden; }
+.sk .ic{ font-size:24px; line-height:1; }
+.sk .nm{ font-size:13px; line-height:1.15; text-align:center; }
+.sk .kx{ position:absolute; left:4px; top:3px; font-size:13px; font-weight:900; color:var(--dan-blue); }
+.sk .cost{ position:absolute; right:4px; top:3px; font-size:12px; font-weight:800; color:var(--ink-soft); }
+.sk .cd{ position:absolute; left:0; right:0; bottom:0; height:0%; background:rgba(28,26,23,.34); }
+.sk[disabled]{ opacity:.5; cursor:not-allowed; }
+.sk.locked .ic{ filter:grayscale(1); }
+.sk.ready{ border-color:var(--dan-red); box-shadow:0 0 0 3px rgba(181,55,46,.22), var(--shadow); }
+@media (max-width:560px){ .sk{ width:64px; min-height:64px; } .sk .nm{ font-size:11px; } }
+@media (max-width:760px){ #skills{ bottom:150px; } }
+
+/* ---- 산소 0 — 어두워졌다가 베이스캠프로 ---- */
+#blackout{ position:fixed; inset:0; z-index:45; background:#04060c; opacity:0;
+  pointer-events:none; transition:opacity 700ms linear; display:flex;
+  align-items:center; justify-content:center; color:#fff; font-size:24px; font-weight:800;
+  text-align:center; padding:20px; }
+#blackout.on{ opacity:1; }
+
+@media (max-width:760px){
+  #vitals{ top:auto; bottom:96px; left:14px; min-width:200px; }
+  body.playing #stick.on ~ #vitals{ }
+}
+
 @media print{
   html,body{ overflow:visible; height:auto; background:#fff; }
-  canvas#gl, .ui, #stick, #btnJumpTouch, #btnShot, #guide, #aim, #record, #pickup{ display:none !important; }
+  canvas#gl, .ui, #stick, #btnJumpTouch, #btnShot, #guide, #aim, #record, #pickup,
+  #skills, #blackout{ display:none !important; }
   #report{ position:static; display:block !important; background:#fff; padding:0; }
   #report .sheet{ width:100%; max-height:none; border:0; box-shadow:none; }
   #report .sheet-actions{ display:none; }
@@ -278,6 +340,14 @@ input[type=range]{ flex:1 1 160px; min-width:140px; height:44px; }
       </button>
     </div>
 
+    <div class="suitpick" id="suitPick">
+      <span class="lab">우주복 고르기</span>
+      <button class="suitbtn" data-suit="white"  aria-pressed="true"><span class="chip" style="background:#eef1f6"></span>흰색</button>
+      <button class="suitbtn" data-suit="orange" aria-pressed="false"><span class="chip" style="background:#ff8a3d"></span>주황</button>
+      <button class="suitbtn" data-suit="blue"   aria-pressed="false"><span class="chip" style="background:#4a7fd0"></span>파랑</button>
+      <button class="suitbtn" data-suit="silver" aria-pressed="false"><span class="chip" style="background:#b9c2cc"></span>은색</button>
+    </div>
+
     <button id="btnGo">🚀 탐사 시작</button>
 
     <details class="howto">
@@ -288,6 +358,8 @@ input[type=range]{ flex:1 1 160px; min-width:140px; height:44px; }
         <li><kbd>Space</kbd> 로 점프해요</li>
         <li>마우스를 <b>끌면</b> 둘러볼 수 있어요</li>
         <li>막히면 <kbd>R</kbd> 을 눌러 처음 자리로 돌아와요</li>
+        <li><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> 로 스킬을 써요</li>
+        <li><kbd>M</kbd> 으로 소리를 끄고 켜요</li>
       </ul>
     </details>
     <p id="loadNote"></p>
@@ -305,6 +377,7 @@ input[type=range]{ flex:1 1 160px; min-width:140px; height:44px; }
   </div>
 </div>
 <div class="ui" id="topRight" hidden>
+  <button class="icon-btn" id="btnMute" title="소리 끄기/켜기 (M)" aria-pressed="false">🔊</button>
   <button class="icon-btn" id="btnZoom" title="관측하기 (Z)" aria-pressed="false">🔭</button>
   <button class="icon-btn" id="btnGrav" title="다른 천체로 이동하기">🌗</button>
   <button class="icon-btn" id="btnReport" title="탐사 보고서">🗒️</button>
@@ -320,6 +393,28 @@ input[type=range]{ flex:1 1 160px; min-width:140px; height:44px; }
   <div class="row"><span class="k">표본</span> <span id="uiSamples">0 / 9</span></div>
   <div class="row"><span class="k">사진</span> <span id="uiPhotos">0 / 2</span></div>
 </div>
+<div class="ui panel" id="vitals" hidden>
+  <div class="g">
+    <div class="glab"><span>🫁</span><span class="nm">산소</span><span class="nv" id="o2Num">100 / 100</span></div>
+    <div class="bar" id="o2Bar"><div class="fill" id="o2Fill"></div></div>
+  </div>
+  <div class="g">
+    <div class="glab"><span>⚡</span><span class="nm">에너지</span><span class="nv" id="enNum">100 / 100</span></div>
+    <div class="bar"><div class="fill" id="enFill"></div></div>
+  </div>
+  <div class="g">
+    <div class="glab"><span>🎖️</span><span class="nm" id="rankName">탐사 등급 1</span><span class="nv" id="xpNum">0 / 60</span></div>
+    <div class="bar"><div class="fill" id="xpFill"></div></div>
+  </div>
+  <div class="warn" id="o2Warn" hidden>⚠ 산소가 적어요! 베이스캠프(파란 기둥)로 가세요</div>
+</div>
+<div id="skills">
+  <button class="sk" id="sk1"><span class="kx">1</span><span class="cost">18</span><span class="ic">🧲</span><span class="nm">자기장<br>펄스</span><span class="cd"></span></button>
+  <button class="sk" id="sk2"><span class="kx">2</span><span class="cost">32</span><span class="ic">🔧</span><span class="nm">수리<br>광선</span><span class="cd"></span></button>
+  <button class="sk" id="sk3"><span class="kx">3</span><span class="cost">14</span><span class="ic">📡</span><span class="nm">광물<br>스캐너</span><span class="cd"></span></button>
+  <button class="sk" id="sk4"><span class="kx">4</span><span class="cost">16</span><span class="ic">🚀</span><span class="nm">부스터<br>점프</span><span class="cd"></span></button>
+</div>
+<div id="blackout"><span id="blackoutMsg"></span></div>
 <div id="guide"><span id="guideArrow">➤</span><br><span id="guideDist"></span></div>
 <div id="pickup"><span class="tag" id="pkTag">표본</span><h3 id="pkName"></h3><p id="pkDesc"></p></div>
 <div id="aim"><div id="aimRing"></div><div id="aimMsg"></div></div>
@@ -384,9 +479,30 @@ input[type=range]{ flex:1 1 160px; min-width:140px; height:44px; }
         <li>🌗 단추로 <b>다른 천체</b>로 이동해요. 임무를 마치면 새 천체가 열려요.</li>
         <li>🔭 단추로 <b>멀리 있는 것을 크게</b> 볼 수 있어요. 사진도 찍어요.</li>
         <li>🗒️ 단추로 지금까지의 <b>탐사 보고서</b>를 봐요.</li>
+        <li>왼쪽 <b>산소</b> 막대가 줄면 파란 <b>산소 충전소</b> 옆에 서 있어요. 0 이 되어도 죽지 않고 베이스캠프로 돌아와요.</li>
+        <li><kbd>1</kbd> 자기장 펄스로 고장 난 로봇을 멈추고, <kbd>2</kbd> 수리 광선으로 고쳐요.
+            <b>부수는 게 아니라 고치는 거예요.</b></li>
+        <li><kbd>3</kbd> 광물 스캐너로 표본 자리를 보고, <kbd>4</kbd> 부스터 점프로 한 번 더 뛰어요.</li>
+        <li>🔊 단추나 <kbd>M</kbd> 으로 소리를 끌 수 있어요.</li>
       </ul>
     </div>
     <div class="sheet-actions"><button class="btn btn-primary" style="flex:1" id="btnCloseHelp2">닫기</button></div>
+  </div>
+</div>
+
+<!-- 고장 난 탐사 로봇 안내 (처음 만났을 때 한 번) -->
+<div class="overlay" id="robotInfo">
+  <div class="sheet">
+    <div class="sheet-head" id="riHead">🤖 저건 무엇일까요?</div>
+    <div class="sheet-body">
+      <p style="margin:0 0 var(--s4); font-size:20px; line-height:1.6" id="riBody"></p>
+      <p style="margin:0; font-size:18px; color:var(--ink-soft); font-weight:700; line-height:1.6">
+        고장 난 로봇은 <b>부수지 않아요.</b> 잠시 멈추게 한 뒤 <b>고쳐서 다시 살려요.</b><br>
+        <b>1</b> 자기장 펄스로 멈추고 → <b>2</b> 수리 광선으로 고쳐요.<br>
+        고친 로봇은 잠시 나를 따라다니며 표본이 있는 곳을 알려 줘요.
+      </p>
+    </div>
+    <div class="sheet-actions"><button class="btn btn-primary" style="flex:1" id="btnCloseRobot">알겠어요</button></div>
   </div>
 </div>
 
@@ -980,10 +1096,64 @@ function refreshWaypoint(){ if(wp.on) waypoint.position.set(wp.x, sampleH(wp.x, 
 /* 뼈 19개를 코드로 만들고, 캡슐을 병합해 하나의 SkinnedMesh로 만든다.
    변형이 필요 없는 부품(헬멧·가방·부츠 등)은 뼈에 그냥 매달아 재질을 따로 쓴다.
    포즈 시스템은 페이즈 2와 완전히 같은 방식으로 뼈를 회전시킨다. */
+/* ===== 여기만 고치면 우주복 색을 바꿀 수 있습니다 =====
+   suit = 몸통·팔다리 / suit2 = 아래팔·종아리 / accent = 견장·무릎·팔꿈치 보강대
+   deep = 허리·가슴 패널(진한 남색) / trim = 테두리 장식 */
+var SUITS = {
+  white:  { name:'흰색',  suit:0xeef1f6, suit2:0xd6dbe6, accent:0xff7a33, deep:0x1d2c52, trim:0xd9b247 },
+  orange: { name:'주황',  suit:0xff8a3d, suit2:0xe06f26, accent:0xf2f6fb, deep:0x1d2c52, trim:0xd9b247 },
+  blue:   { name:'파랑',  suit:0x4a7fd0, suit2:0x3862a6, accent:0xffc23d, deep:0x132038, trim:0xdfe8f6 },
+  silver: { name:'은색',  suit:0xb9c2cc, suit2:0x98a2ad, accent:0x2f8fd0, deep:0x272c34, trim:0xd9b247 }
+};
+/* ===== 여기까지 ===== */
+var suitKey = 'white';
+
+/* 왼팔에 붙일 태극기 패치 — 그림 파일 없이 코드로 그린다 */
+function makeFlagTex(){
+  var c = document.createElement('canvas'); c.width = 96; c.height = 64;
+  var x = c.getContext('2d');
+  x.fillStyle = '#ffffff'; x.fillRect(0,0,96,64);
+  var cx = 48, cy = 32, R = 15;
+  x.beginPath(); x.arc(cx, cy, R, -Math.PI/4, Math.PI*3/4); // 빨강(위)
+  x.arc(cx - R/2*Math.SQRT1_2, cy + R/2*Math.SQRT1_2, R/2, Math.PI*3/4, Math.PI*7/4, true);
+  x.arc(cx + R/2*Math.SQRT1_2, cy - R/2*Math.SQRT1_2, R/2, Math.PI*3/4, Math.PI*7/4);
+  x.closePath(); x.fillStyle = '#cd2e3a'; x.fill();
+  x.beginPath(); x.arc(cx, cy, R, Math.PI*3/4, Math.PI*7/4); // 파랑(아래)
+  x.arc(cx + R/2*Math.SQRT1_2, cy - R/2*Math.SQRT1_2, R/2, -Math.PI/4, Math.PI*3/4, true);
+  x.arc(cx - R/2*Math.SQRT1_2, cy + R/2*Math.SQRT1_2, R/2, -Math.PI/4, Math.PI*3/4);
+  x.closePath(); x.fillStyle = '#0047a0'; x.fill();
+  x.fillStyle = '#111';                                     // 네 귀퉁이 괘(간단히)
+  var bars = [[16,12,3],[80,12,3],[16,52,3],[80,52,3]];
+  bars.forEach(function(b, i){
+    for(var k=0;k<3;k++){
+      var y = b[1] - 6 + k*6;
+      if(i===1 && k===1){ x.fillRect(b[0]-11, y-1.6, 9, 3.2); x.fillRect(b[0]+2, y-1.6, 9, 3.2); }
+      else if(i===2 && k!==1){ x.fillRect(b[0]-11, y-1.6, 9, 3.2); x.fillRect(b[0]+2, y-1.6, 9, 3.2); }
+      else if(i===3 && k!==2){ x.fillRect(b[0]-11, y-1.6, 9, 3.2); x.fillRect(b[0]+2, y-1.6, 9, 3.2); }
+      else x.fillRect(b[0]-11, y-1.6, 22, 3.2);
+    }
+  });
+  var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+}
+/* 가슴 제어판 작은 화면 */
+function makeScreenTex(){
+  var c = document.createElement('canvas'); c.width = 64; c.height = 48;
+  var x = c.getContext('2d');
+  x.fillStyle = '#06222b'; x.fillRect(0,0,64,48);
+  x.strokeStyle = '#5ff0d0'; x.lineWidth = 2;
+  x.beginPath();
+  for(var i=0;i<=64;i+=4) x.lineTo(i, 30 - Math.sin(i*0.35)*7 - (i%12===0?6:0));
+  x.stroke();
+  x.fillStyle = '#5ff0d0';
+  x.fillRect(4,6,16,4); x.fillRect(4,38,26,4); x.fillRect(44,38,16,4);
+  var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+}
+
 var CH = {};
 function buildCharacter(){
-  var C = { suit:0xeef1f6, suit2:0xdfe4ec, dark:0x9aa2b0, gold:0xc8912f,
-            visor:0x2b3a4a, orange:0xff7a33, panel:0x3a4250, helmet:0xf6f8fc };
+  var S = SUITS[suitKey] || SUITS.white;
+  var C = { suit:S.suit, suit2:S.suit2, dark:0x6a7280, gold:S.trim,
+            visor:0xffc24a, orange:S.accent, panel:S.deep, helmet:0xf6f8fc };
 
   /* --- 1) 뼈 정의 (바인드 자세, 메시 로컬 좌표. 발바닥이 원점) --- */
   var defs = [
@@ -1083,15 +1253,15 @@ function buildCharacter(){
   function cap(r, total, rs){                    // total = 반구 포함 전체 길이
     return new THREE.CapsuleGeometry(r, Math.max(0.001, total - 2*r), 4, rs||10);
   }
-  addSkinned(cap(0.150, 0.34, 12), C.suit,  ['hips'],        0, 0.96, 0);
-  addSkinned(cap(0.185, 0.50, 14), C.suit,  ['spine','chest'], 0, 1.24, 0);
-  addSkinned(cap(0.060, 0.14, 10), C.suit2, ['neck'],        0, 1.45, 0);
+  addSkinned(cap(0.152, 0.34, 12), C.panel, ['hips'],          0, 0.96, 0);   // 허리 = 진한 남색
+  addSkinned(cap(0.186, 0.50, 14), C.suit,  ['spine','chest'], 0, 1.24, 0);
+  addSkinned(cap(0.060, 0.14, 10), C.dark,  ['neck'],          0, 1.45, 0);
   [['L',1],['R',-1]].forEach(function(sd){
     var s = sd[0], k = sd[1];
-    addSkinned(cap(0.066, 0.32, 10), C.suit, ['upperArm_'+s], 0.19*k, 1.23, 0);
-    addSkinned(cap(0.058, 0.30, 10), C.suit, ['lowerArm_'+s], 0.195*k, 0.94, 0);
-    addSkinned(cap(0.086, 0.46, 11), C.suit, ['upperLeg_'+s], 0.11*k, 0.71, 0);
-    addSkinned(cap(0.074, 0.44, 11), C.suit, ['lowerLeg_'+s], 0.11*k, 0.30, 0);
+    addSkinned(cap(0.068, 0.32, 10), C.suit,  ['upperArm_'+s], 0.19*k, 1.23, 0);
+    addSkinned(cap(0.059, 0.30, 10), C.suit2, ['lowerArm_'+s], 0.195*k, 0.94, 0);
+    addSkinned(cap(0.088, 0.46, 11), C.suit,  ['upperLeg_'+s], 0.11*k, 0.71, 0);
+    addSkinned(cap(0.075, 0.44, 11), C.suit2, ['lowerLeg_'+s], 0.11*k, 0.30, 0);
   });
 
   var merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false);
@@ -1115,33 +1285,126 @@ function buildCharacter(){
     m.castShadow = quality.shadow;
     bone.add(m); return m;
   }
-  var mHelm = matte(C.helmet, 24), mDark = matte(C.dark, 10),
-      mGold = matte(C.gold, 30), mPanel = matte(C.panel, 25),
-      mOrange = matte(C.orange, 20), mShoulder = matte(C.suit2, 14);
-  var mVisor = new THREE.MeshPhongMaterial({ color:C.visor, shininess:110, specular:0x9ec4e4 });
+  var mHelm  = new THREE.MeshPhongMaterial({ color:C.helmet, shininess:80, specular:0xdfe8f4 });
+  var mDark  = matte(C.dark, 12);
+  var mGold  = matte(C.gold, 40);
+  var mPanel = matte(C.panel, 26);
+  var mAcc   = matte(C.orange, 22);
+  var mSuit2 = matte(C.suit2, 14);
+  var mRub   = matte(0x2b3038, 4);                       // 고무·호스
+  var mMetal = new THREE.MeshPhongMaterial({ color:0xbfc6cf, shininess:90, specular:0xffffff });
+  // 금색 반사 바이저 — 반사를 세게 준다 (specular 를 흰색 가까이, shininess 를 높게)
+  var mVisor = new THREE.MeshPhongMaterial({
+    color:C.visor, shininess:220, specular:0xfff2c8, emissive:0x3a2a05, reflectivity:1 });
+  var mGlow  = new THREE.MeshPhongMaterial({ color:0xdff4ff, emissive:0x8fd8ff, shininess:60 });
+  var mLamp  = new THREE.MeshPhongMaterial({ color:0x9dffbe, emissive:0x2fbf5a, shininess:60 });
+  var mScr   = new THREE.MeshPhongMaterial({ map:makeScreenTex(), emissive:0x0d4f52, shininess:70 });
+  var mFlag  = new THREE.MeshPhongMaterial({ map:makeFlagTex(), shininess:8 });
 
-  attach(byName['head'], new THREE.SphereGeometry(0.155, 16, 12), mHelm, 0, 1.62, 0);
-  var vis = attach(byName['head'],
-    new THREE.SphereGeometry(0.158, 16, 12, Math.PI/2-0.62, 1.24, 0.62, 0.72),
-    mVisor, 0, 1.62, 0);
-  vis.rotation.x = -0.10;
-  var bnd = attach(byName['head'], new THREE.TorusGeometry(0.152, 0.016, 6, 20), mGold, 0, 1.62, 0);
+  /* -- 헬멧 -- */
+  var helm = attach(byName['head'], new THREE.SphereGeometry(0.180, 18, 14), mHelm, 0, 1.632, 0);
+  helm.scale.set(1, 1.03, 1.05);
+  // 금색 반사 바이저 — 앞으로 볼록 튀어나온 덩어리로 만들어 어느 각도에서도 확실히 보이게 한다
+  var vis = attach(byName['head'], new THREE.SphereGeometry(0.142, 18, 14), mVisor, 0, 1.632, 0.052);
+  vis.scale.set(1.14, 0.92, 0.92);
+  var vfr = attach(byName['head'], new THREE.TorusGeometry(0.152, 0.015, 6, 22), mGold, 0, 1.632, 0.044);
+  vfr.rotation.set(Math.PI/2, 0, 0); vfr.scale.set(1.06, 1.06, 0.55);
+  var bnd = attach(byName['head'], new THREE.TorusGeometry(0.150, 0.018, 6, 22), mGold, 0, 1.545, 0);
   bnd.rotation.x = Math.PI/2;
-  attach(byName['chest'], new THREE.BoxGeometry(0.30,0.36,0.16), mDark, 0, 1.28, -0.19);
-  attach(byName['chest'], new THREE.BoxGeometry(0.13,0.09,0.05), mPanel, 0, 1.22, 0.19);
+  // 헬멧 아래 목 고리
+  var col = attach(byName['head'], new THREE.CylinderGeometry(0.098, 0.108, 0.06, 14), mMetal, 0, 1.475, 0);
+  // 헬멧 테두리 조명 — 어두운 천체에서 실제로 빛난다
+  var rim = attach(byName['head'], new THREE.TorusGeometry(0.150, 0.022, 6, 22), mGlow, 0, 1.735, 0.012);
+  rim.rotation.x = Math.PI/2 - 0.30;
+  var lampL = attach(byName['head'], new THREE.BoxGeometry(0.045,0.030,0.030), mGlow, -0.135, 1.700, 0.075);
+  var lampR = attach(byName['head'], new THREE.BoxGeometry(0.045,0.030,0.030), mGlow,  0.135, 1.700, 0.075);
+  // ★ 조명을 뼈(Bone) 밑에 달면 r147 에서 셰이더가 깨져 모든 물체가 새까매진다.
+  //   rig(일반 Group) 에 달아야 한다.
+  var headLight = new THREE.PointLight(0xbfe6ff, 0.0, 9, 2);
+  headLight.position.set(0, 1.72, 0.24);
+  // 헬멧 위 안테나
+  var ant = attach(byName['head'], new THREE.CylinderGeometry(0.006,0.006,0.19,5), mMetal, 0.12, 1.79, -0.04);
+  ant.rotation.z = -0.32;
+  attach(byName['head'], new THREE.SphereGeometry(0.017,8,6), mAcc, 0.155, 1.875, -0.04);
+
+  /* -- 생명유지장치(가방·탱크·호스·상태 램프) -- */
+  var pack = attach(byName['chest'], new THREE.BoxGeometry(0.30,0.38,0.15), mPanel, 0, 1.28, -0.20);
+  attach(byName['chest'], new THREE.BoxGeometry(0.32,0.055,0.17), mAcc, 0, 1.44, -0.20);   // 윗단 액센트
+  attach(byName['chest'], new THREE.CylinderGeometry(0.052,0.052,0.30,10), mMetal, -0.10, 1.27, -0.30);
+  attach(byName['chest'], new THREE.CylinderGeometry(0.052,0.052,0.30,10), mMetal,  0.10, 1.27, -0.30);
+  attach(byName['chest'], new THREE.CylinderGeometry(0.056,0.056,0.03,10), mGold, -0.10, 1.43, -0.30);
+  attach(byName['chest'], new THREE.CylinderGeometry(0.056,0.056,0.03,10), mGold,  0.10, 1.43, -0.30);
+  var hoseL = attach(byName['chest'], new THREE.TorusGeometry(0.105,0.015,5,14,Math.PI*1.05), mRub, -0.11, 1.38, -0.09);
+  hoseL.rotation.set(Math.PI/2, 0, 1.1);
+  var hoseR = attach(byName['chest'], new THREE.TorusGeometry(0.105,0.015,5,14,Math.PI*1.05), mRub,  0.11, 1.38, -0.09);
+  hoseR.rotation.set(Math.PI/2, 0, -1.1 + Math.PI);
+  var lamp = attach(byName['chest'], new THREE.SphereGeometry(0.026,10,8), mLamp, 0.10, 1.40, -0.115);
+
+  /* -- 가슴 제어판 · 어깨 견장 · 허리 공구벨트 -- */
+  var cp = attach(byName['chest'], new THREE.BoxGeometry(0.19,0.13,0.05), mPanel, 0, 1.235, 0.175);
+  cp.rotation.x = 0.12;
+  var scr = attach(byName['chest'], new THREE.PlaneGeometry(0.10,0.062), mScr, 0, 1.245, 0.203);
+  scr.rotation.x = 0.12;
+  attach(byName['chest'], new THREE.BoxGeometry(0.036,0.014,0.02), mAcc, -0.058, 1.195, 0.196);
+  attach(byName['chest'], new THREE.BoxGeometry(0.036,0.014,0.02), mGold,  0.058, 1.195, 0.196);
+  var band = attach(byName['chest'], new THREE.TorusGeometry(0.188,0.020,6,20), mAcc, 0, 1.115, 0);
+  band.rotation.x = Math.PI/2;
+  var belt = attach(byName['hips'], new THREE.TorusGeometry(0.158,0.030,6,18), mPanel, 0, 0.945, 0);
+  belt.rotation.x = Math.PI/2;
+  attach(byName['hips'], new THREE.BoxGeometry(0.075,0.085,0.055), mDark,  0.155, 0.930, 0.02);
+  attach(byName['hips'], new THREE.BoxGeometry(0.062,0.070,0.050), mDark, -0.155, 0.930, -0.02);
+  attach(byName['hips'], new THREE.BoxGeometry(0.030,0.055,0.030), mGold,  0.06, 0.925, 0.145);
+  // 등에서 허리로 내려오는 케이블
+  var cab = attach(byName['spine'], new THREE.TorusGeometry(0.10,0.011,5,12,Math.PI*0.9), mRub, 0.055, 1.10, -0.175);
+  cab.rotation.set(0, 0.25, 0.15);
+
   [['L',1],['R',-1]].forEach(function(sd){
     var s = sd[0], k = sd[1];
-    attach(byName['shoulder_'+s], new THREE.SphereGeometry(0.088,10,8), mShoulder, 0.19*k, 1.38, 0);
-    attach(byName['hand_'+s],     new THREE.SphereGeometry(0.072,10,8), mGold, 0.20*k, 0.78, 0);
-    var boot = attach(byName['foot_'+s], new THREE.BoxGeometry(0.115,0.10,0.24), mDark, 0.11*k, 0.06, 0.045);
-    var st = attach(byName['upperArm_'+s], new THREE.TorusGeometry(0.070,0.015,6,14), mOrange, 0.19*k, 1.14, 0);
-    st.rotation.x = Math.PI/2;
+    // 어깨 견장 (납작한 반구 + 액센트 테두리)
+    var pad = attach(byName['shoulder_'+s], new THREE.SphereGeometry(0.098,12,9,0,Math.PI*2,0,Math.PI*0.62),
+      mAcc, 0.195*k, 1.395, 0);
+    pad.scale.set(1.10, 0.66, 1.10); pad.rotation.z = -0.25*k;
+    var pt = attach(byName['shoulder_'+s], new THREE.TorusGeometry(0.093,0.013,5,16), mSuit2, 0.195*k, 1.352, 0);
+    pt.rotation.x = Math.PI/2;
+    // 팔꿈치 보강대
+    var el = attach(byName['lowerArm_'+s], new THREE.TorusGeometry(0.066,0.018,6,14), mAcc, 0.192*k, 1.075, 0);
+    el.rotation.x = Math.PI/2;
+    // 아래팔 디스플레이 (왼팔만 크게)
+    if(s === 'L'){
+      var disp = attach(byName['lowerArm_'+s], new THREE.BoxGeometry(0.075,0.095,0.028), mPanel, 0.222*k, 0.925, 0.03);
+      disp.rotation.set(0.1, -0.5*k, 0);
+      var dscr = attach(byName['lowerArm_'+s], new THREE.PlaneGeometry(0.052,0.062), mScr, 0.236*k, 0.925, 0.042);
+      dscr.rotation.set(0.1, -0.5*k, 0);
+      // 태극기 패치는 왼쪽 위팔에
+      var fl = attach(byName['upperArm_'+s], new THREE.PlaneGeometry(0.082,0.055), mFlag, 0.256*k, 1.285, 0.005);
+      fl.rotation.set(0, Math.PI/2*k, 0);
+    } else {
+      attach(byName['lowerArm_'+s], new THREE.BoxGeometry(0.050,0.060,0.024), mPanel, 0.222*k, 0.925, 0.02);
+    }
+    // 장갑 (액센트 손 + 금색 소매 고리)
+    attach(byName['hand_'+s], new THREE.SphereGeometry(0.074,10,8), mPanel, 0.20*k, 0.775, 0.01);
+    var cuff = attach(byName['lowerArm_'+s], new THREE.TorusGeometry(0.062,0.017,6,14), mGold, 0.20*k, 0.828, 0);
+    cuff.rotation.x = Math.PI/2;
+    // 무릎 보강대
+    var kn = attach(byName['lowerLeg_'+s], new THREE.SphereGeometry(0.080,10,8,0,Math.PI*2,0,Math.PI*0.55),
+      mPanel, 0.11*k, 0.475, 0.012);
+    kn.rotation.x = Math.PI/2 - 0.15; kn.scale.set(1, 0.75, 1);
+    var kt = attach(byName['lowerLeg_'+s], new THREE.TorusGeometry(0.078,0.013,5,14), mAcc, 0.11*k, 0.432, 0);
+    kt.rotation.x = Math.PI/2;
+    // 허벅지 주머니
+    attach(byName['upperLeg_'+s], new THREE.BoxGeometry(0.055,0.10,0.045), mDark, 0.155*k, 0.72, 0.015);
+    // 부츠 — 몸통 + 밝은 밑창
+    attach(byName['foot_'+s], new THREE.BoxGeometry(0.122,0.105,0.245), mDark, 0.11*k, 0.068, 0.045);
+    attach(byName['foot_'+s], new THREE.BoxGeometry(0.130,0.032,0.255), mSuit2, 0.11*k, 0.014, 0.045);
+    var sh = attach(byName['lowerLeg_'+s], new THREE.TorusGeometry(0.078,0.016,6,14), mGold, 0.11*k, 0.155, 0);
+    sh.rotation.x = Math.PI/2;
   });
 
   /* --- 5) 계층: rig(이동·방향) → root(스쿼시·상하 진동) → mesh --- */
   var rig = new THREE.Group();
   var root = new THREE.Group();          // 스케일은 여기에. 메시에 걸면 스키닝이 어긋난다.
   rig.add(root); root.add(mesh);
+  rig.add(headLight);
   scene.add(rig);
 
   // 발밑 블롭 그림자
@@ -1159,12 +1422,24 @@ function buildCharacter(){
 
   CH = {
     rig:rig, root:root, mesh:mesh, bones:byName, blob:blob,
+    lampMat:mLamp, glowMat:mGlow, visorMat:mVisor, headLight:headLight,
     hips: byName['hips'], chest: byName['chest'], neck: byName['neck'], head: byName['head'],
     armL:{ sh:byName['shoulder_L'], up:byName['upperArm_L'], el:byName['lowerArm_L'], hd:byName['hand_L'] },
     armR:{ sh:byName['shoulder_R'], up:byName['upperArm_R'], el:byName['lowerArm_R'], hd:byName['hand_R'] },
     legL:{ hp:byName['upperLeg_L'], kn:byName['lowerLeg_L'], ft:byName['foot_L'] },
     legR:{ hp:byName['upperLeg_R'], kn:byName['lowerLeg_R'], ft:byName['foot_R'] }
   };
+}
+
+function rebuildCharacter(key){
+  if(SUITS[key]) suitKey = key;
+  if(CH.rig){
+    scene.remove(CH.rig);
+    CH.rig.traverse(function(o){ if(o.geometry) o.geometry.dispose(); });
+    if(CH.blob){ scene.remove(CH.blob); CH.blob.geometry.dispose(); }
+  }
+  buildCharacter();
+  updateVitals();
 }
 
 /* ---------- 포즈 (절차적) ---------- */
@@ -1304,6 +1579,8 @@ addEventListener('keydown', function(e){
   if(k === ' ') P.buffer = jumpBufferTime();
   if(k === 'r') respawn();
   if(k === 'z') setZoom(!zoomOn);
+  if(k === 'm') setMute(AUD.on);
+  if(k >= '1' && k <= '4') useSkill(parseInt(k, 10));
 });
 addEventListener('keyup', function(e){ keys[e.key.toLowerCase()] = false; });
 addEventListener('blur', function(){ keys = {}; });
@@ -1390,6 +1667,7 @@ function jumpHeld(){ return !!keys[' '] || jumpTouch; }
 function respawn(){
   P.pos.copy(SPAWN); P.pos.y = sampleH(SPAWN.x, SPAWN.z);
   P.vel.set(0,0,0); P.grounded = true; P.squash = 0;
+  RP.dblReady = true;
   CAM.yaw = 0; CAM.pitch = 0.16;
 }
 
@@ -1477,8 +1755,10 @@ function updateSamples(){
       showPickup(BODIES[bodyKey].name+' 표본 '+bodySampleCount(bodyKey)+' / 3', data.name, data.desc);
       activeSamples.splice(i,1);
       buildSamples();     // 빛기둥까지 함께 정리
+      rebuildMarks();
       updateCounters();
       saveSet('collected', collected);
+      addXP(20);
     }
   }
 }
@@ -1606,6 +1886,13 @@ var MISSIONS = [
     check:function(){ return bodySampleCount('moon') >= 3; },
     done:['달 표본 3개를 모두 모았어요!','이번엔 하늘을 봐요'] },
 
+  { body:'moon', text:'고장 난 탐사 로봇을 멈추고 고쳐 주세요.',
+    sub:'1 번으로 멈춘 뒤 가까이 가서 2 번으로 고쳐요',
+    begin:function(){ robotWaypoint(); },
+    tick:function(){ robotWaypoint(); },
+    check:function(){ return repairedCount('moon') >= 1; },
+    done:['로봇을 고쳤어요!','달에는 생물이 없어요 — 저건 사람이 보낸 기계예요'] },
+
   { body:'moon', text:'🔭 관측으로 하늘의 지구를 동그라미 안에 담아 사진을 찍으세요.',
     sub:'🔭 단추를 누르고 마우스를 끌어 하늘을 보세요',
     begin:function(){ clearWaypoint(); },
@@ -1623,6 +1910,13 @@ var MISSIONS = [
     tick:function(){ nextSampleWaypoint(); },
     check:function(){ return bodySampleCount('mars') >= 3; },
     done:['화성 표본 3개 완료!','마지막으로 가장 높은 곳에 올라요'] },
+
+  { body:'mars', text:'화성에 남겨진 탐사 로봇 2대를 고쳐 주세요.',
+    sub:'멈추고(1) → 고치고(2). 고친 로봇이 표본 자리를 알려 줘요',
+    begin:function(){ robotWaypoint(); },
+    tick:function(){ robotWaypoint(); },
+    check:function(){ return repairedCount('mars') >= 2; },
+    done:['로봇 2대를 되살렸어요!','고친 로봇이 다시 화성을 조사하러 갈 거예요'] },
 
   { body:'mars', text:'화성에서 가장 높은 곳에 올라서세요.', sub:'빛기둥이 서 있는 봉우리예요',
     begin:function(){ var e = findExtreme(true); setWaypoint(e.x, e.z); },
@@ -1686,6 +1980,7 @@ function updateMission(dt){
     var d = (typeof m.done === 'function') ? m.done() : m.done;
     showRecord(d[0], d[1]);
     if(m.after) m.after();
+    addXP(25);
     mi++; missionT = 0;
     if(mi >= MISSIONS.length){ clearWaypoint(); setTimeout(openReport, 2200); }
     refreshTask();
@@ -1756,6 +2051,9 @@ function openReport(){
     '<div><b>'+order.filter(function(k){return unlocked[k];}).length+'</b><span>다녀온 천체</span></div>' +
     '<div><b>'+sampleCount()+'</b><span>모은 표본</span></div>' +
     '<div><b>'+photos.length+'</b><span>찍은 사진</span></div>' +
+    '<div><b>'+RP.rank+' 등급</b><span>탐사 등급</span></div>' +
+    '<div><b>'+(repairedCount('moon')+repairedCount('mars')+repairedCount('europa'))+
+      '</b><span>고친 탐사 로봇</span></div>' +
     '<div><b>'+mins+'분 '+secs+'초</b><span>걸린 시간</span></div></div>';
 
   html += '<h3>천체별 점프 기록</h3><table><tr><th>천체</th><th>끌어당기는 힘</th>' +
@@ -1779,6 +2077,19 @@ function openReport(){
     if(rows) html += '<p style="font-weight:800;margin:8px 0 4px">'+BODY_ICON[k]+' '+BODIES[k].name+'</p><ul>'+rows+'</ul>';
   });
   if(!any) html += '<p style="font-size:18px">아직 모은 표본이 없어요.</p>';
+
+  html += '<h3>고쳐 준 탐사 로봇</h3>';
+  var rrows = '';
+  ['moon','mars','europa'].forEach(function(k){
+    var list = ROBOT_DEFS[k] || [];
+    for(var i=0;i<list.length;i++) if(fixedMap[k+i])
+      rrows += '<li><b>'+list[i].name+'</b> ('+BODIES[k].name+') — '+list[i].note+'</li>';
+  });
+  html += rrows
+    ? '<ul>'+rrows+'</ul><p style="font-size:17px;color:var(--ink-soft);font-weight:700;margin:8px 0 0">' +
+      '달·화성·유로파에는 생물이 살지 않아요. 그곳에서 만난 로봇은 모두 사람이 보낸 기계예요. ' +
+      '고장 난 기계는 부수지 않고 고쳐서 다시 쓰는 것이 좋아요.</p>'
+    : '<p style="font-size:18px">아직 고친 로봇이 없어요.</p>';
 
   html += '<h3>사진첩</h3>';
   if(photos.length){
@@ -1818,7 +2129,10 @@ function setBody(key){
   document.getElementById('uiSkyRow').hidden = !skyBodyLabel;
   document.getElementById('uiSky').textContent = skyBodyLabel || '—';
   buildTerrain(); buildProps();
-  buildSamples(); refreshWaypoint();
+  buildStations(); buildRobots();
+  buildSamples(); rebuildMarks(); refreshWaypoint();
+  RP.o2 = RP.o2max; RP.en = RP.enmax;      // 우주선으로 이동하며 산소를 채운다
+  updateVitals();
   P.pos.x = SPAWN.x; P.pos.z = SPAWN.z;
   P.pos.y = sampleH(P.pos.x, P.pos.z);
   P.vel.set(0,0,0);
@@ -1843,6 +2157,657 @@ function showRecord(main, sub){
   var el = document.getElementById('record');
   el.classList.add('on');
   clearTimeout(recT); recT = setTimeout(function(){ el.classList.remove('on'); }, 2600);
+}
+
+/* ============================================================================
+   RPG 요소 — 산소·에너지 게이지 / 탐사 등급 / 스킬 4종 / 고장 난 탐사 로봇
+   ★ 외계 생물은 나오지 않는다. 달·화성·유로파에는 생물이 살지 않기 때문이다.
+     여기 나오는 '적'은 모두 사람이 보낸 탐사 로봇이 고장 난 것이다.
+     부수지 않고 "멈춘 뒤 고쳐서 되살리는" 방식이다.
+   ============================================================================ */
+
+/* ---------- 등급·게이지 상태 ---------- */
+var XP_NEED = [0, 60, 150, 280, 450];        // 등급 2·3·4·5 로 오르는 데 필요한 경험치
+var RP = {
+  o2:100, o2max:100, en:100, enmax:100,
+  xp:0, rank:1, repaired:0,
+  scanT:0, dblReady:true, dead:false, hurtT:0, o2WarnT:0
+};
+function rankOxygen(r){ return 100 + (r-1)*18; }
+function rankEnergy(r){ return 100 + (r-1)*12; }
+function skillUnlocked(n){
+  if(n === 1 || n === 2) return true;
+  if(n === 3) return RP.rank >= 2;
+  return RP.rank >= 3;                        // 4 부스터 점프
+}
+function addXP(n, why){
+  RP.xp += n;
+  while(RP.rank < 5 && RP.xp >= XP_NEED[RP.rank]){
+    RP.rank++;
+    RP.o2max = rankOxygen(RP.rank); RP.enmax = rankEnergy(RP.rank);
+    RP.o2 = RP.o2max; RP.en = RP.enmax;
+    var msg = '탐사 등급 '+RP.rank+' 이 되었어요!';
+    var sub = '산소와 에너지를 더 많이 담을 수 있어요';
+    if(RP.rank === 2) sub = '새 스킬 3 광물 스캐너가 열렸어요';
+    if(RP.rank === 3) sub = '새 스킬 4 부스터 점프가 열렸어요';
+    showRecord(msg, sub);
+    sfxLevel();
+  }
+  if(why) showRecord('경험치 +'+n, why);
+  updateVitals();
+}
+var SKILL_COST = { 1:18, 2:32, 3:14, 4:16 };
+var SKILL_CD   = { 1:0, 2:0, 3:0, 4:0 };
+var SKILL_CDMAX= { 1:3.5, 2:1.2, 3:8.0, 4:0.9 };
+
+/* ---------- 게이지 화면 갱신 ---------- */
+var _vitalEls = null, _vitalT = 0;
+function vitalEls(){
+  if(!_vitalEls) _vitalEls = {
+    o2n:document.getElementById('o2Num'), o2f:document.getElementById('o2Fill'),
+    o2b:document.getElementById('o2Bar'), o2w:document.getElementById('o2Warn'),
+    enn:document.getElementById('enNum'), enf:document.getElementById('enFill'),
+    xpn:document.getElementById('xpNum'), xpf:document.getElementById('xpFill'),
+    rk:document.getElementById('rankName')
+  };
+  return _vitalEls;
+}
+function updateVitals(force){
+  if(!force){
+    if(now - _vitalT < 90) return;
+    _vitalT = now;
+  }
+  var e = vitalEls();
+  var o2r = clamp(RP.o2/RP.o2max, 0, 1), enr = clamp(RP.en/RP.enmax, 0, 1);
+  e.o2n.textContent = Math.round(RP.o2)+' / '+RP.o2max;
+  e.o2f.style.transform = 'scaleX('+o2r.toFixed(3)+')';
+  e.o2b.classList.toggle('low', o2r < 0.25);
+  e.o2w.hidden = o2r >= 0.25;
+  e.enn.textContent = Math.round(RP.en)+' / '+RP.enmax;
+  e.enf.style.transform = 'scaleX('+enr.toFixed(3)+')';
+  var need = RP.rank >= 5 ? RP.xp : XP_NEED[RP.rank];
+  var prev = XP_NEED[RP.rank-1] || 0;
+  e.rk.textContent = '탐사 등급 '+RP.rank;
+  e.xpn.textContent = RP.rank >= 5 ? ('최고 등급 · '+RP.xp) : (RP.xp+' / '+need);
+  e.xpf.style.transform = 'scaleX('+(RP.rank>=5 ? 1 :
+    clamp((RP.xp-prev)/Math.max(1,need-prev),0,1)).toFixed(3)+')';
+  // 생명유지장치 상태 램프 색 (산소가 줄면 초록 → 노랑 → 빨강)
+  if(CH.lampMat){
+    var c = o2r > 0.5 ? 0x2fbf5a : (o2r > 0.25 ? 0xd8a021 : 0xc22b1e);
+    CH.lampMat.emissive.setHex(c);
+    CH.lampMat.color.setHex(o2r > 0.5 ? 0x9dffbe : (o2r > 0.25 ? 0xffe6a0 : 0xffb0a6));
+  }
+  // 스킬 단추 상태
+  for(var n=1;n<=4;n++){
+    var b = document.getElementById('sk'+n);
+    if(!b) continue;
+    var lock = !skillUnlocked(n);
+    b.classList.toggle('locked', lock);
+    b.disabled = lock;
+    var can = !lock && SKILL_CD[n] <= 0 && RP.en >= SKILL_COST[n];
+    b.classList.toggle('ready', can);
+    b.querySelector('.cd').style.height = lock ? '100%'
+      : Math.round(100*clamp(SKILL_CD[n]/SKILL_CDMAX[n],0,1))+'%';
+    b.title = lock ? ('탐사 등급 '+(n===3?2:3)+' 이 되면 열려요') : '';
+  }
+}
+
+/* ---------- 산소 충전소 ---------- */
+var stations = [];
+function buildStations(){
+  stations.length = 0;
+  var spots = [[7.5,4.5]];                   // 베이스캠프 (시작 자리 바로 옆)
+  if(bodyKey === 'moon')   spots.push([-40,-34],[36,28]);
+  if(bodyKey === 'mars')   spots.push([30,-40],[-30,30]);
+  if(bodyKey === 'europa') spots.push([-34,20],[34,-24]);
+  for(var i=0;i<spots.length;i++){
+    var x = spots[i][0], z = spots[i][1], y = sampleH(x,z);
+    var base = new THREE.Mesh(new THREE.CylinderGeometry(0.85,1.05,0.5,12),
+      matte(0x2b6178, 20));
+    base.position.set(x, y+0.25, z);
+    base.castShadow = quality.shadow; base.receiveShadow = quality.shadow;
+    props.add(base);
+    var tank = new THREE.Mesh(new THREE.CapsuleGeometry(0.30, 1.1, 4, 10),
+      new THREE.MeshPhongMaterial({ color:0x9ee6ff, emissive:0x1a5a72, shininess:70 }));
+    tank.position.set(x, y+1.35, z); tank.castShadow = quality.shadow;
+    props.add(tank);
+    var beam = new THREE.Mesh(new THREE.CylinderGeometry(0.75,0.75,18,10,1,true),
+      new THREE.MeshBasicMaterial({ color:0x7fd8ff, transparent:true, opacity:0.20,
+        side:THREE.DoubleSide, depthWrite:false, fog:false, blending:THREE.AdditiveBlending }));
+    beam.position.set(x, y+9, z); props.add(beam);
+    stations.push({ x:x, z:z });
+  }
+}
+function nearStation(){
+  for(var i=0;i<stations.length;i++){
+    if(Math.hypot(P.pos.x-stations[i].x, P.pos.z-stations[i].z) < 4.5) return true;
+  }
+  return false;
+}
+
+/* ===== 여기만 고치면 로봇을 바꿀 수 있습니다 (고장 난 탐사 로봇) =====
+   실제로 달·화성에는 사람이 보낸 기계가 남아 있습니다. 생물이 아닙니다. */
+var ROBOT_DEFS = {
+  moon: [
+    { type:'rover', name:'루나-K 로버', x:-16,  z:-30, r:11,
+      note:'바퀴로 달 표면을 달리며 사진을 찍던 로봇이에요.' },
+    { type:'drone', name:'측량 드론 DL-2', x:32, z:18, r:9,
+      note:'낮게 떠서 땅의 모양을 재던 작은 로봇이에요.' }
+  ],
+  mars: [
+    { type:'rover',  name:'아레스 로버 M-3', x:24, z:-26, r:12,
+      note:'돌을 긁어 성분을 알아보던 바퀴 달린 로봇이에요.' },
+    { type:'walker', name:'네발 탐사기 스파이더-1', x:-28, z:-8, r:10,
+      note:'네 다리로 바위 위를 걸어 다니던 로봇이에요.' },
+    { type:'drone',  name:'비행 드론 H-4', x:14, z:34, r:9,
+      note:'화성의 얇은 공기 속에서 날던 작은 헬리콥터예요.' }
+  ],
+  europa: [
+    { type:'walker', name:'얼음 탐사기 아이스워커', x:-24, z:26, r:10,
+      note:'미끄러운 얼음 위를 걷도록 만든 로봇이에요.' },
+    { type:'drone',  name:'얼음 드론 EU-9', x:30, z:2, r:9,
+      note:'갈라진 얼음 틈을 내려다보던 로봇이에요.' }
+  ]
+};
+/* ===== 여기까지 ===== */
+
+var robots = [], robotGroup = new THREE.Group(); scene.add(robotGroup);
+var fixedMap = {};        // 고친 로봇 (수업 한 번 동안만 기억한다)
+var robotInfoShown = false;
+
+function makeRobotMesh(type){
+  var g = new THREE.Group();
+  var mBody = matte(0x8f97a3, 20), mDark = matte(0x353b45, 8),
+      mSol  = new THREE.MeshPhongMaterial({ color:0x1f3d78, shininess:90, specular:0x9ec4e4 });
+  var mEye = new THREE.MeshPhongMaterial({ color:0xff9d90, emissive:0xc22b1e, shininess:60 });
+  var spin = [];
+  if(type === 'rover'){
+    var b = new THREE.Mesh(new THREE.BoxGeometry(0.86,0.36,1.16), mBody);
+    b.position.y = 0.46; g.add(b);
+    var sol = new THREE.Mesh(new THREE.BoxGeometry(1.05,0.05,1.20), mSol);
+    sol.position.y = 0.66; g.add(sol);
+    var wg = new THREE.CylinderGeometry(0.24,0.24,0.16,10);
+    [[-0.50,0.42],[0.50,0.42],[-0.50,-0.42],[0.50,-0.42]].forEach(function(p){
+      var w = new THREE.Mesh(wg, mDark);
+      w.position.set(p[0], 0.24, p[1]); w.rotation.z = Math.PI/2; g.add(w); spin.push(w);
+    });
+    var mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.55,7), mDark);
+    mast.position.set(0, 0.92, -0.30); g.add(mast);
+    var head = new THREE.Mesh(new THREE.BoxGeometry(0.30,0.18,0.16), mBody);
+    head.position.set(0, 1.22, -0.30); g.add(head);
+    var eye = new THREE.Mesh(new THREE.SphereGeometry(0.075,10,8), mEye);
+    eye.position.set(0, 1.22, -0.20); g.add(eye);
+    g.userData.spinAxis = 'x';
+  } else if(type === 'walker'){
+    var bd = new THREE.Mesh(new THREE.BoxGeometry(0.66,0.32,0.86), mBody);
+    bd.position.y = 0.72; g.add(bd);
+    var hd = new THREE.Mesh(new THREE.SphereGeometry(0.20,12,9), mBody);
+    hd.position.set(0, 0.86, 0.46); g.add(hd);
+    var eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.08,10,8), mEye);
+    eye2.position.set(0, 0.88, 0.62); g.add(eye2);
+    var lg = new THREE.CylinderGeometry(0.045,0.035,0.52,6);
+    [[-0.34,0.34],[0.34,0.34],[-0.34,-0.34],[0.34,-0.34]].forEach(function(p, i){
+      var leg = new THREE.Mesh(lg, mDark);
+      leg.position.set(p[0]*1.25, 0.34, p[1]);
+      leg.rotation.z = (p[0]<0? 0.30 : -0.30);
+      g.add(leg); spin.push(leg);
+    });
+    var sol2 = new THREE.Mesh(new THREE.BoxGeometry(0.60,0.04,0.60), mSol);
+    sol2.position.y = 0.90; g.add(sol2);
+    g.userData.spinAxis = 'legs';
+  } else {
+    var core = new THREE.Mesh(new THREE.OctahedronGeometry(0.28, 0), mBody);
+    core.position.y = 1.20; g.add(core);
+    var eye3 = new THREE.Mesh(new THREE.SphereGeometry(0.09,10,8), mEye);
+    eye3.position.set(0, 1.18, 0.26); g.add(eye3);
+    for(var i=0;i<3;i++){
+      var a = i*Math.PI*2/3;
+      var arm = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.04,0.06), mDark);
+      arm.position.set(Math.cos(a)*0.25, 1.28, Math.sin(a)*0.25);
+      arm.rotation.y = -a; g.add(arm);
+      var rot = new THREE.Mesh(new THREE.TorusGeometry(0.17,0.022,5,12), mSol);
+      rot.position.set(Math.cos(a)*0.44, 1.31, Math.sin(a)*0.44);
+      rot.rotation.x = Math.PI/2; g.add(rot); spin.push(rot);
+    }
+    g.userData.spinAxis = 'y';
+  }
+  g.traverse(function(o){ if(o.isMesh) o.castShadow = quality.shadow; });
+  g.userData.spin = spin;
+  g.userData.eyeMat = mEye;
+  return g;
+}
+function buildRobots(){
+  while(robotGroup.children.length){
+    var c = robotGroup.children.pop();
+    c.traverse(function(o){ if(o.geometry) o.geometry.dispose(); });
+  }
+  robots.length = 0;
+  var list = ROBOT_DEFS[bodyKey];
+  if(!list) return;
+  for(var i=0;i<list.length;i++){
+    var d = list[i];
+    if(fixedMap[bodyKey+i]) continue;                 // 이미 고친 로봇은 다시 나오지 않는다
+    var m = makeRobotMesh(d.type);
+    m.position.set(d.x, sampleH(d.x,d.z), d.z);
+    robotGroup.add(m);
+    robots.push({ i:i, def:d, mesh:m, ang:Math.random()*6.28, stun:0, fixed:0,
+                  followT:0, hover:d.type==='drone' ? 0.0 : 0, phase:Math.random()*6.28 });
+  }
+}
+function repairedCount(key){
+  var list = ROBOT_DEFS[key] || [], n = 0;
+  for(var i=0;i<list.length;i++) if(fixedMap[key+i]) n++;
+  return n;
+}
+function robotWaypoint(){
+  var best = null, bd = 1e9;
+  for(var i=0;i<robots.length;i++){
+    if(robots[i].fixed) continue;
+    var d = Math.hypot(P.pos.x-robots[i].mesh.position.x, P.pos.z-robots[i].mesh.position.z);
+    if(d < bd){ bd = d; best = robots[i]; }
+  }
+  if(best) setWaypoint(best.mesh.position.x, best.mesh.position.z);
+  else clearWaypoint();
+}
+function showRobotInfo(r){
+  robotInfoShown = true;
+  var t = bodyKey === 'moon'
+    ? '달에는 생물이 살지 않아요. 이건 오래전에 사람이 보낸 탐사 로봇이 고장 난 거예요.'
+    : (bodyKey === 'mars'
+      ? '화성에도 생물은 살지 않아요. 이건 사람이 보낸 탐사 로봇이 고장 나서 제멋대로 움직이는 거예요.'
+      : '유로파에서는 아직 생물을 찾지 못했어요. 이건 사람이 보낸 탐사 로봇이 고장 난 거예요.');
+  document.getElementById('riHead').textContent = '🤖 ' + r.def.name;
+  document.getElementById('riBody').innerHTML = t + '<br>' + r.def.note;
+  document.getElementById('robotInfo').classList.add('on');
+  for(var i=0;i<robots.length;i++) robots[i].stun = Math.max(robots[i].stun, 3.0);
+}
+
+function robotColor(r){
+  var m = r.mesh.userData.eyeMat;
+  if(r.fixed){ m.color.setHex(0xb6ffcf); m.emissive.setHex(0x2fbf5a); }
+  else if(r.stun > 0){ m.color.setHex(0xbfe4ff); m.emissive.setHex(0x2b6178); }
+  else { m.color.setHex(0xff9d90); m.emissive.setHex(0xc22b1e); }
+}
+function updateRobots(dt){
+  if(창열림()) dt = 0;
+  var nearHostile = 0;
+  for(var i=0;i<robots.length;i++){
+    var r = robots[i], m = r.mesh;
+    var dx = P.pos.x - m.position.x, dz = P.pos.z - m.position.z;
+    var d = Math.hypot(dx, dz);
+    var spd = 0;
+
+    if(r.fixed){
+      // 고친 로봇 — 잠시 나를 따라다니며 도와준다
+      r.followT -= dt;
+      if(r.followT > 0 && d > 3.0){ spd = Math.min(4.2, 1.6 + d*0.35); m.position.x += dx/d*spd*dt; m.position.z += dz/d*spd*dt; }
+      if(r.followT > 0 && d > 0.4) m.rotation.y = lerpAngle(m.rotation.y, Math.atan2(dx,dz), 1-Math.exp(-6*dt));
+    } else if(r.stun > 0){
+      r.stun -= dt;
+      m.rotation.z = Math.sin(now*0.02)*0.05;
+      if(r.stun <= 0) m.rotation.z = 0;
+    } else {
+      if(!robotInfoShown && d < 22 && started && !document.getElementById('robotInfo').classList.contains('on')){
+        showRobotInfo(r); continue;
+      }
+      if(d < 18){                                  // 다가온다
+        spd = (r.def.type === 'drone') ? 2.6 : (r.def.type === 'walker' ? 2.2 : 1.7);
+        if(d > 0.2){ m.position.x += dx/d*spd*dt; m.position.z += dz/d*spd*dt; }
+        m.rotation.y = lerpAngle(m.rotation.y, Math.atan2(dx,dz), 1-Math.exp(-4*dt));
+        nearHostile = Math.max(nearHostile, clamp(1 - d/18, 0, 1));
+      } else {                                     // 순찰
+        r.ang += dt*0.35;
+        var tx = r.def.x + Math.cos(r.ang)*r.def.r, tz = r.def.z + Math.sin(r.ang)*r.def.r;
+        var ddx = tx-m.position.x, ddz = tz-m.position.z, dd = Math.max(0.001,Math.hypot(ddx,ddz));
+        spd = 1.4;
+        m.position.x += ddx/dd*spd*dt; m.position.z += ddz/dd*spd*dt;
+        m.rotation.y = lerpAngle(m.rotation.y, Math.atan2(ddx,ddz), 1-Math.exp(-3*dt));
+      }
+      // 부딪히면 산소가 조금 줄어든다 (즉사는 없다)
+      if(d < 1.7 && !RP.dead){
+        RP.o2 = Math.max(0, RP.o2 - 7.5*dt);
+        RP.hurtT -= dt;
+        if(RP.hurtT <= 0){
+          RP.hurtT = 1.2;
+          if(opt.shake) CAM.trauma = Math.min(1, CAM.trauma + 0.35);
+          sfxHurt();
+          showPickup('조심하세요', '고장 난 로봇과 부딪혔어요',
+            '산소가 조금 새어 나갔어요. 1 번 자기장 펄스로 로봇을 멈춘 뒤 2 번으로 고쳐 보세요.');
+        }
+      }
+    }
+    m.position.x = clamp(m.position.x, -74, 74);
+    m.position.z = clamp(m.position.z, -74, 74);
+    m.position.y = sampleH(m.position.x, m.position.z);
+    // 부품 움직임
+    r.phase += dt*(spd*2.2 + 1.0);
+    var sp = m.userData.spin, ax = m.userData.spinAxis;
+    if(ax === 'x'){ for(var k=0;k<sp.length;k++) sp[k].rotation.x += spd*dt*4.5; }
+    else if(ax === 'y'){ for(var k2=0;k2<sp.length;k2++) sp[k2].rotation.z += dt*(r.stun>0?2:14); }
+    else { for(var k3=0;k3<sp.length;k3++) sp[k3].rotation.x = Math.sin(r.phase + k3*1.6)*0.30*(spd>0.1?1:0.25); }
+    if(m.userData.spinAxis === 'y') m.position.y += 1.0 + Math.sin(r.phase*0.6)*0.12;
+    robotColor(r);
+  }
+  return nearHostile;
+}
+
+/* ---------- 스킬 효과(파티클·링·빛) ---------- */
+var fxList = [];
+var _ringGeo = null, _beamGeo = null;
+function ringGeo(){ if(!_ringGeo) _ringGeo = new THREE.RingGeometry(0.82, 1.0, 28); return _ringGeo; }
+function fxRing(x,y,z,color,maxR,dur){
+  var m = new THREE.Mesh(ringGeo(), new THREE.MeshBasicMaterial({
+    color:color, transparent:true, opacity:0.9, side:THREE.DoubleSide,
+    depthWrite:false, fog:false, blending:THREE.AdditiveBlending }));
+  m.rotation.x = -Math.PI/2; m.position.set(x,y,z);
+  scene.add(m);
+  fxList.push({ m:m, t:0, dur:dur, maxR:maxR, kind:'ring' });
+}
+function fxBeam(ax,ay,az,bx,by,bz,color,dur){
+  var len = Math.hypot(bx-ax, by-ay, bz-az);
+  var g = new THREE.CylinderGeometry(0.055,0.055,len,7,1,true);
+  var m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({
+    color:color, transparent:true, opacity:0.85, depthWrite:false, fog:false,
+    blending:THREE.AdditiveBlending }));
+  m.position.set((ax+bx)/2,(ay+by)/2,(az+bz)/2);
+  m.lookAt(bx,by,bz); m.rotateX(Math.PI/2);
+  scene.add(m);
+  fxList.push({ m:m, t:0, dur:dur, kind:'beam' });
+}
+function fxSpark(x,y,z,color,n){
+  for(var i=0;i<n;i++){
+    var s = new THREE.Mesh(new THREE.TetrahedronGeometry(0.09),
+      new THREE.MeshBasicMaterial({ color:color, transparent:true, opacity:1, fog:false,
+        depthWrite:false, blending:THREE.AdditiveBlending }));
+    s.position.set(x,y,z);
+    var a = Math.random()*6.28, e = 1.6 + Math.random()*2.6;
+    scene.add(s);
+    fxList.push({ m:s, t:0, dur:0.9, kind:'spark',
+      vx:Math.cos(a)*e*0.5, vy:e, vz:Math.sin(a)*e*0.5 });
+  }
+}
+function updateFX(dt){
+  for(var i=fxList.length-1;i>=0;i--){
+    var f = fxList[i]; f.t += dt;
+    var k = f.t/f.dur;
+    if(k >= 1){ scene.remove(f.m); f.m.geometry.dispose(); f.m.material.dispose(); fxList.splice(i,1); continue; }
+    if(f.kind === 'ring'){
+      var s = lerp(0.4, f.maxR, k);
+      f.m.scale.set(s,s,s);
+      f.m.material.opacity = 0.9*(1-k);
+    } else if(f.kind === 'beam'){
+      f.m.material.opacity = 0.85*(1-k);
+      f.m.scale.set(1+k*0.7, 1, 1+k*0.7);
+    } else {
+      f.m.position.x += f.vx*dt; f.m.position.y += f.vy*dt; f.m.position.z += f.vz*dt;
+      f.vy -= 4.0*dt;
+      f.m.rotation.x += dt*6; f.m.rotation.y += dt*4;
+      f.m.material.opacity = 1-k;
+    }
+  }
+}
+
+/* ---------- 표본 위치 표시 (광물 스캐너 · 고친 로봇의 도움) ---------- */
+var markGroup = new THREE.Group(); scene.add(markGroup);
+function rebuildMarks(){
+  while(markGroup.children.length){
+    var c = markGroup.children.pop(); c.geometry.dispose(); c.material.dispose();
+  }
+  for(var i=0;i<activeSamples.length;i++){
+    var s = activeSamples[i];
+    var m = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.10, 6, 20),
+      new THREE.MeshBasicMaterial({ color:0x7dffc4, transparent:true, opacity:0.9,
+        depthWrite:false, depthTest:false, fog:false, blending:THREE.AdditiveBlending }));
+    m.rotation.x = Math.PI/2;
+    m.position.set(s.x, sampleH(s.x,s.z)+2.2, s.z);
+    m.renderOrder = 5;
+    markGroup.add(m);
+  }
+}
+function hasAlly(){
+  for(var i=0;i<robots.length;i++) if(robots[i].fixed && robots[i].followT > 0) return true;
+  return false;
+}
+
+/* ---------- 스킬 ---------- */
+function useSkill(n){
+  if(!started || RP.dead) return;
+  if(!skillUnlocked(n)){
+    showRecord('아직 열리지 않은 스킬이에요', '탐사 등급 '+(n===3?2:3)+' 이 되면 쓸 수 있어요');
+    return;
+  }
+  if(SKILL_CD[n] > 0) return;
+  if(RP.en < SKILL_COST[n]){
+    showRecord('에너지가 부족해요', '조금 기다리면 에너지가 저절로 차올라요');
+    return;
+  }
+  var px = P.pos.x, py = P.pos.y, pz = P.pos.z, i, r, d;
+
+  if(n === 1){                               // 자기장 펄스 — 가까운 로봇을 멈춘다
+    var hit = 0;
+    for(i=0;i<robots.length;i++){
+      r = robots[i]; if(r.fixed) continue;
+      d = Math.hypot(P.pos.x-r.mesh.position.x, P.pos.z-r.mesh.position.z);
+      if(d < 9.5){ r.stun = Math.max(r.stun, 6.0); hit++;
+        fxSpark(r.mesh.position.x, r.mesh.position.y+1.0, r.mesh.position.z, 0x8fd8ff, 6); }
+    }
+    fxRing(px, py+0.25, pz, 0x7fd8ff, 9.5, 0.75);
+    sfxPulse();
+    showRecord(hit ? ('로봇 '+hit+'대를 멈췄어요') : '펄스를 쏘았어요',
+      hit ? '가까이 가서 2 번 수리 광선으로 고쳐 주세요' : '가까운 로봇이 없었어요');
+  }
+  else if(n === 2){                          // 수리 광선 — 멈춘 로봇을 고친다
+    var best = null, bd = 7.0;
+    for(i=0;i<robots.length;i++){
+      r = robots[i]; if(r.fixed || r.stun <= 0) continue;
+      d = Math.hypot(P.pos.x-r.mesh.position.x, P.pos.z-r.mesh.position.z);
+      if(d < bd){ bd = d; best = r; }
+    }
+    if(!best){
+      showRecord('고칠 로봇이 없어요', '먼저 1 번 자기장 펄스로 로봇을 멈춰 주세요');
+      return;
+    }
+    fxBeam(px, py+1.3, pz, best.mesh.position.x, best.mesh.position.y+1.0, best.mesh.position.z,
+           0xffd76a, 0.6);
+    fxSpark(best.mesh.position.x, best.mesh.position.y+1.0, best.mesh.position.z, 0x7dffc4, 14);
+    fxRing(best.mesh.position.x, best.mesh.position.y+0.1, best.mesh.position.z, 0x7dffc4, 3.2, 0.8);
+    best.fixed = 1; best.stun = 0; best.followT = 75;
+    RP.repaired++;
+    fixedMap[bodyKey+best.i] = true;
+    rebuildMarks();
+    sfxRepair();
+    showPickup('로봇 수리 성공', best.def.name+' 을(를) 되살렸어요',
+      best.def.note + ' 잠시 나를 따라다니며 표본이 있는 곳(초록 고리)을 알려 줘요.');
+    addXP(40);
+  }
+  else if(n === 3){                          // 광물 스캐너
+    RP.scanT = 14;
+    rebuildMarks();
+    fxRing(px, py+0.25, pz, 0x7dffc4, 14, 1.0);
+    sfxScan();
+    showRecord('광물 스캐너 작동', '표본이 있는 곳에 초록 고리가 14초 동안 보여요');
+  }
+  else {                                     // 부스터 점프
+    if(!P.grounded && !RP.dblReady){
+      showRecord('부스터를 이미 썼어요', '땅에 닿으면 다시 쓸 수 있어요');
+      return;
+    }
+    if(!P.grounded) RP.dblReady = false;
+    P.vel.y = JUMP_V0 * (P.grounded ? 1.15 : 1.0);
+    P.grounded = false; P.coyote = 0;
+    P.jumpStartY = Math.min(P.jumpStartY, P.pos.y); P.airborneFrom = now;
+    fxRing(px, py+0.1, pz, 0xffb27a, 3.4, 0.55);
+    fxSpark(px, py+0.15, pz, 0xffb27a, 8);
+    sfxBoost();
+  }
+  RP.en -= SKILL_COST[n];
+  SKILL_CD[n] = SKILL_CDMAX[n];
+  updateVitals();
+}
+
+/* ---------- 산소·에너지 갱신 ---------- */
+function fadeBlack(on, msg){
+  var el = document.getElementById('blackout');
+  document.getElementById('blackoutMsg').textContent = msg || '';
+  el.classList.toggle('on', on);
+}
+/* 설명 카드·설정·보고서가 열려 있으면 산소를 쓰지 않는다.
+   글을 읽는 동안 손해를 보면 안 된다. */
+function 창열림(){ return !!document.querySelector('.overlay.on'); }
+function updateRPG(dt, tension){
+  if(P.grounded) RP.dblReady = true;
+  for(var n=1;n<=4;n++) if(SKILL_CD[n] > 0) SKILL_CD[n] = Math.max(0, SKILL_CD[n]-dt);
+  RP.en = Math.min(RP.enmax, RP.en + (5.0 + RP.rank*0.8)*dt);
+  if(RP.scanT > 0) RP.scanT -= dt;
+
+  if(!RP.dead){
+    if(nearStation()){
+      RP.o2 = Math.min(RP.o2max, RP.o2 + 26*dt);
+      RP.en = Math.min(RP.enmax, RP.en + 14*dt);
+    } else if(bodyKey !== 'earth' && !창열림()){
+      // 지구 훈련장에는 공기가 있어 산소통을 쓰지 않는다
+      var vh = Math.hypot(P.vel.x, P.vel.z);
+      RP.o2 -= (0.26 + vh*0.10) * dt;
+    }
+    if(RP.o2 <= 0){
+      RP.o2 = 0; RP.dead = true;
+      fadeBlack(true, '산소가 다 떨어졌어요 — 베이스캠프로 돌아갑니다');
+      setTimeout(function(){
+        respawn(); P.peakY = P.pos.y;
+        RP.o2 = RP.o2max*0.65; RP.dead = false;
+        fadeBlack(false, '');
+        showRecord('베이스캠프로 돌아왔어요', '파란 산소 충전소 옆에 서 있으면 산소가 다시 차올라요');
+        updateVitals();
+      }, 1600);
+    }
+  }
+  // 헬멧 조명은 어두운 천체에서만 실제로 켠다
+  if(CH.headLight){
+    var want = (bodyKey === 'earth') ? 0.0 : 1.5;
+    CH.headLight.intensity += (want - CH.headLight.intensity) * (1-Math.exp(-3*dt));
+  }
+  // 표본 위치 고리 — 스캐너를 켰거나 고친 로봇이 따라다닐 때만 보인다
+  markGroup.visible = (RP.scanT > 0) || hasAlly();
+  if(markGroup.visible && !reduceMotion){
+    for(var i=0;i<markGroup.children.length;i++){
+      var mk = markGroup.children[i];
+      mk.rotation.z += dt*1.2;
+      mk.position.y = sampleH(mk.position.x, mk.position.z) + 2.2 + Math.sin(now*0.003 + i)*0.18;
+    }
+  }
+  updateVitals();
+  audioTension(tension);
+}
+
+/* ============================================================================
+   소리 — 파일을 쓰지 않고 Web Audio 로 직접 만든다 (교실용: 기본 볼륨 작게)
+   ============================================================================ */
+var AUD = { ctx:null, master:null, on:true, drone:null, filt:null,
+            nextNote:0, nextBell:0, step:0, tension:0, ready:false };
+function audioInit(){
+  if(AUD.ctx || !AUD.on) return;
+  try{
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    var ctx = new AC();
+    AUD.ctx = ctx;
+    AUD.master = ctx.createGain();
+    AUD.master.gain.value = 0.22;                    // 교실에서 쓴다 — 작게
+    AUD.master.connect(ctx.destination);
+    // 낮은 드론 (우주의 정적)
+    var filt = ctx.createBiquadFilter();
+    filt.type = 'lowpass'; filt.frequency.value = 220; filt.Q.value = 3;
+    var dg = ctx.createGain(); dg.gain.value = 0.30;
+    filt.connect(dg); dg.connect(AUD.master);
+    [55, 55.45, 82.5].forEach(function(f, i){
+      var o = ctx.createOscillator();
+      o.type = i === 2 ? 'triangle' : 'sawtooth';
+      o.frequency.value = f;
+      var g = ctx.createGain(); g.gain.value = i === 2 ? 0.25 : 0.5;
+      o.connect(g); g.connect(filt); o.start();
+    });
+    AUD.filt = filt; AUD.droneGain = dg;
+    AUD.nextNote = ctx.currentTime + 0.4;
+    AUD.nextBell = ctx.currentTime + 5;
+    AUD.ready = true;
+  }catch(e){ AUD.ctx = null; }
+}
+function tone(freq, dur, type, vol, when){
+  if(!AUD.ready || !AUD.on) return;
+  var ctx = AUD.ctx, t = when || ctx.currentTime;
+  var o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type || 'triangle'; o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol||0.10), t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  o.connect(g); g.connect(AUD.master);
+  o.start(t); o.stop(t+dur+0.05);
+  return o;
+}
+function sweep(f0, f1, dur, type, vol){
+  if(!AUD.ready || !AUD.on) return;
+  var ctx = AUD.ctx, t = ctx.currentTime;
+  var o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type || 'sawtooth';
+  o.frequency.setValueAtTime(f0, t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20,f1), t+dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol||0.14, t+0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  o.connect(g); g.connect(AUD.master);
+  o.start(t); o.stop(t+dur+0.05);
+}
+function sfxPulse(){ sweep(900, 90, 0.55, 'square', 0.13); }
+function sfxRepair(){
+  if(!AUD.ready) return;
+  var t = AUD.ctx.currentTime;
+  [523,659,784,1047].forEach(function(f,i){ tone(f, 0.28, 'triangle', 0.13, t+i*0.075); });
+}
+function sfxScan(){
+  if(!AUD.ready) return;
+  var t = AUD.ctx.currentTime;
+  [1200,1600].forEach(function(f,i){ tone(f, 0.12, 'sine', 0.10, t+i*0.13); });
+}
+function sfxBoost(){ sweep(180, 900, 0.35, 'sawtooth', 0.12); }
+function sfxHurt(){ sweep(280, 70, 0.30, 'square', 0.13); }
+function sfxLevel(){
+  if(!AUD.ready) return;
+  var t = AUD.ctx.currentTime;
+  [392,523,659,880].forEach(function(f,i){ tone(f, 0.35, 'triangle', 0.14, t+i*0.10); });
+}
+var CALM = [220, 261.6, 293.7, 329.6, 392, 440, 523.3];
+var TENSE= [220, 233.1, 277.2, 311.1, 349.2, 415.3];
+function audioTension(v){
+  AUD.tension += ((v||0) - AUD.tension) * 0.05;
+  if(!AUD.ready || !AUD.on) return;
+  try{
+    AUD.filt.frequency.value = 200 + AUD.tension*520;
+    AUD.droneGain.gain.value = 0.30 + AUD.tension*0.28;
+  }catch(e){}
+}
+function audioTick(){
+  if(!AUD.ready || !AUD.on) return;
+  var ctx = AUD.ctx, t = ctx.currentTime, T = AUD.tension;
+  if(t > AUD.nextNote){
+    var set = T > 0.4 ? TENSE : CALM;
+    var f = set[Math.floor(Math.random()*set.length)];
+    tone(f, T > 0.4 ? 0.35 : 0.9, T > 0.4 ? 'square' : 'triangle', T > 0.4 ? 0.055 : 0.045, t);
+    AUD.nextNote = t + (T > 0.4 ? 0.34 : 0.85);
+  }
+  if(t > AUD.nextBell && T < 0.35){
+    tone(1318.5 + Math.random()*400, 1.6, 'sine', 0.05, t);
+    AUD.nextBell = t + 6 + Math.random()*8;
+  }
+}
+function setMute(m){
+  AUD.on = !m;
+  var b = document.getElementById('btnMute');
+  b.textContent = m ? '🔇' : '🔊';
+  b.setAttribute('aria-pressed', String(m));
+  b.title = m ? '소리 켜기 (M)' : '소리 끄기 (M)';
+  saveSet('mute', m);
+  if(AUD.master){ try{ AUD.master.gain.value = m ? 0 : 0.22; }catch(e){} }
+  if(!m && started) { audioInit(); try{ AUD.ctx.resume(); }catch(e){} }
 }
 
 /* ---------- 물리 · 갱신 ---------- */
@@ -2082,6 +3047,11 @@ function tick(t){
   }
 
   updateSamples();
+  var tension = updateRobots(dt);
+  updateRPG(dt, tension);
+  updateFX(dt);
+  audioTick();
+  document.getElementById('skills').classList.toggle('on', !zoomOn);
   updateMission(dt);
   updateGuide();
   updateAim(dt);
@@ -2107,7 +3077,8 @@ function reapplyQuality(){
   buildSkyBody(bodyKey);                 // ★ 예전에 정의되지 않은 key 를 넘겨 오류가 났다
   document.getElementById('uiSkyRow').hidden = !skyBodyLabel;
   document.getElementById('uiSky').textContent = skyBodyLabel || '—';
-  buildTerrain(); buildProps(); buildSamples(); refreshWaypoint();
+  buildTerrain(); buildProps(); buildStations(); buildRobots();
+  buildSamples(); rebuildMarks(); refreshWaypoint();
   resize();
   qualHistory = 1;
 }
@@ -2152,6 +3123,26 @@ addEventListener('keydown', function(e){
   document.getElementById('help').classList.remove('on');
 });
 
+for(var _sn=1; _sn<=4; _sn++){
+  (function(n){
+    var b = document.getElementById('sk'+n);
+    b.onclick = function(){ useSkill(n); };
+    b.addEventListener('touchstart', function(e){ e.preventDefault(); useSkill(n); }, {passive:false});
+  })(_sn);
+}
+Array.prototype.forEach.call(document.querySelectorAll('#suitPick .suitbtn'), function(b){
+  b.onclick = function(){
+    Array.prototype.forEach.call(document.querySelectorAll('#suitPick .suitbtn'), function(x){
+      x.setAttribute('aria-pressed','false'); });
+    b.setAttribute('aria-pressed','true');
+    rebuildCharacter(b.getAttribute('data-suit'));
+    saveSet('suit', suitKey);
+  };
+});
+document.getElementById('btnMute').onclick = function(){ setMute(AUD.on); };
+document.getElementById('btnCloseRobot').onclick = function(){
+  document.getElementById('robotInfo').classList.remove('on');
+};
 document.getElementById('btnZoom').onclick = function(){ setZoom(!zoomOn); };
 document.getElementById('btnGrav').onclick = function(){ setZoom(false); openBodyPick(); };
 document.getElementById('btnCloseBody').onclick = function(){ document.getElementById('bodyPick').classList.remove('on'); };
@@ -2163,12 +3154,18 @@ addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
   document.getElementById('bodyPick').classList.remove('on');
   document.getElementById('report').classList.remove('on');
+  document.getElementById('robotInfo').classList.remove('on');
 });
 
 document.getElementById('btnGo').onclick = function(){
   document.getElementById('intro').style.display = 'none';
   document.body.classList.add('playing');
-  ['topLeft','topRight','taskBar','collect','fps'].forEach(function(id){ document.getElementById(id).hidden = false; });
+  ['topLeft','topRight','taskBar','collect','fps','vitals'].forEach(function(id){ document.getElementById(id).hidden = false; });
+  document.getElementById('skills').classList.add('on');
+  RP.o2max = rankOxygen(RP.rank); RP.enmax = rankEnergy(RP.rank);
+  RP.o2 = RP.o2max; RP.en = RP.enmax;
+  updateVitals();
+  if(AUD.on){ audioInit(); try{ AUD.ctx.resume(); }catch(e){} }
   Array.prototype.forEach.call(document.querySelectorAll('#segMode button'), function(b){
     b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === opt.mode));
   });
@@ -2184,9 +3181,15 @@ document.getElementById('btnGo').onclick = function(){
 
 /* ---------- 시작 ---------- */
 var pendingBody = 'earth';               // 탐사 시작 단추를 누르면 갈 곳
+suitKey = saveGet('suit', 'white');
+if(!SUITS[suitKey]) suitKey = 'white';
+Array.prototype.forEach.call(document.querySelectorAll('#suitPick .suitbtn'), function(b){
+  b.setAttribute('aria-pressed', String(b.getAttribute('data-suit') === suitKey));
+});
 buildTerrain();
 buildProps();
 buildCharacter();
+setMute(saveGet('mute', false));
 setBody('moon');                         // 타이틀 화면 배경(달 표면 + 지구)
 respawn();
 P.peakY = P.pos.y;
